@@ -1,0 +1,87 @@
+{
+  "projectType": "general",
+  "projectName": "My Account Menu Builder for WooCommerce",
+  "projectDescription": "Visual drag & drop builder for WooCommerce My Account menu with custom endpoints, icons, role-based visibility, and white-label mode.",
+  "theme": "almond",
+  "primaryColor": "#96588a",
+  "lightColor": "#b47ba8",
+  "darkColor": "#7a4a6f",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/menu-builder",
+              "features/custom-endpoints",
+              "features/external-links",
+              "features/icons",
+              "features/role-based-visibility",
+              "features/badges-counters",
+              "features/separators"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/white-label",
+              "advanced/export-import",
+              "advanced/troubleshooting"
+            ]
+          },
+          {
+            "group": "Resources",
+            "pages": [
+              "faq",
+              "changelog",
+              "contributing"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Developer Reference",
+            "pages": [
+              "api/overview",
+              "api/hooks-filters",
+              "api/classes"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Visual drag & drop menu builder with live preview",
+    "Custom endpoints with HTML/shortcode content support",
+    "External links with new-tab control",
+    "Dashicons icon support with visual picker",
+    "Role-based visibility per menu item",
+    "Static badges and dynamic counters (orders, downloads)",
+    "Menu separators for visual grouping",
+    "White-label mode with complete rebranding",
+    "Export/Import JSON configuration",
+    "HPOS and Cart/Checkout Blocks compatible"
+  ],
+  "publicApiSurface": [
+    "WMAB_Settings::get_menu_items()",
+    "WMAB_Settings::get_white_label()",
+    "WMAB_Settings::get_all_roles()",
+    "woocommerce_account_menu_items filter (modified at priority 999)",
+    "woocommerce_get_endpoint_url filter",
+    "woocommerce_account_{slug}_endpoint action (for custom endpoints)"
+  ]
+}
