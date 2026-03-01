@@ -1,0 +1,424 @@
+---
+title: 'Custom Endpoints'
+description: 'Create custom My Account pages with unique URLs and content'
+---
+
+Custom endpoints let you add entirely new pages to the WooCommerce My Account section, complete with custom slugs, content, and functionality.
+
+## What are Endpoints?
+
+In WooCommerce, endpoints are URL segments that appear after `/my-account/` and load specific content within the My Account page template.
+
+**Examples:**
+- `/my-account/orders/` → Orders endpoint
+- `/my-account/edit-address/` → Address editing endpoint  
+- `/my-account/my-custom-page/` → Your custom endpoint
+
+<Info>
+  Custom endpoints use WordPress rewrite rules and integrate seamlessly with WooCommerce's My Account navigation system.
+</Info>
+
+## Creating a Custom Endpoint
+
+<Steps>
+  <Step title="Open Menu Builder">
+    Navigate to **WooCommerce → Settings → My Account Menu**.
+  </Step>
+  
+  <Step title="Add New Item">
+    Click the **Add Item** button in the toolbar.
+  </Step>
+  
+  <Step title="Configure Endpoint">
+    In the modal that opens:
+    - Set the **Title** (e.g., "My Wishlist")
+    - Select **Endpoint** as the type
+    - Enter a URL-friendly **Endpoint Slug** (e.g., "my-wishlist")
+    - Optionally add **Endpoint Content** (HTML, shortcodes, or text)
+  </Step>
+  
+  <Step title="Save and Flush">
+    Click **Save Item**, then **Save Menu**. Visit **Settings → Permalinks** and click "Save Changes" to register the new URL.
+  </Step>
+</Steps>
+
+## Endpoint Configuration
+
+### Endpoint Slug
+
+The slug is the URL-friendly identifier for your endpoint:
+
+```php
+// Slug validation (class-wmab-settings.php:516)
+'endpoint' => sanitize_title( $item['endpoint'] ?? '' )
+```
+
+**Requirements:**
+- Lowercase letters, numbers, hyphens only
+- No spaces or special characters
+- Must be unique (don't duplicate existing WooCommerce endpoints)
+- Should be descriptive and memorable
+
+<Tabs>
+  <Tab title="Good Examples">
+    - `my-wishlist`
+    - `support-tickets`  
+    - `reward-points`
+    - `membership-status`
+  </Tab>
+  
+  <Tab title="Bad Examples">
+    - `My Wishlist` (contains spaces)
+    - `support_tickets` (underscores not recommended)
+    - `orders` (conflicts with WooCommerce default)
+    - `123` (not descriptive)
+  </Tab>
+</Tabs>
+
+### Default WooCommerce Endpoints
+
+The plugin **never re-registers** these core WooCommerce endpoints to avoid conflicts:
+
+```php
+// Reserved endpoints (class-wmab-endpoints.php:15-30)
+const WC_DEFAULTS = [
+    'dashboard',
+    'orders',
+    'downloads',
+    'edit-address',
+    'edit-account',
+    'customer-logout',
+    'payment-methods',
+    'view-order',
+    'order-pay',
+    'order-received',
+    'add-payment-method',
+    'delete-payment-method',
+    'set-default-payment-method',
+    'lost-password',
+];
+```
+
+<Warning>
+  Avoid using these slugs for custom endpoints. They're managed by WooCommerce core.
+</Warning>
+
+## Endpoint Content
+
+### Adding Static Content
+
+You can add HTML content directly in the **Endpoint Content** textarea:
+
+```html
+<h2>Welcome to My Wishlist</h2>
+<p>Save your favorite products here for quick access later.</p>
+<div class="wishlist-items">
+  <!-- Your wishlist items will appear here -->
+</div>
+```
+
+The content is sanitized using `wp_kses_post()` which allows safe HTML:
+
+```php
+// Content sanitization (class-wmab-settings.php:518)
+'content' => wp_kses_post( $item['content'] ?? '' )
+```
+
+### Using Shortcodes
+
+Endpoint content supports WordPress shortcodes, which are automatically processed:
+
+```php
+// Content rendering with shortcode support (class-wmab-endpoints.php:115-133)
+private static function render_content( $item ) {
+    $content = $item['content'] ?? '';
+
+    echo '<div class="wmab-endpoint-content">';
+
+    if ( ! empty( $content ) ) {
+        // Support shortcodes + basic HTML
+        $filtered = do_shortcode( wp_kses_post( $content ) );
+        echo $filtered;
+    } else {
+        echo '<p>' . esc_html( sprintf(
+            __( 'Welcome to %s.', 'my-account-menu-builder-for-woocommerce' ),
+            $item['title'] ?? ''
+        ) ) . '</p>';
+    }
+
+    echo '</div>';
+}
+```
+
+**Example shortcode usage:**
+
+```text
+[contact-form-7 id="123" title="Support Form"]
+
+[yith_wcwl_wishlist]
+
+[woocommerce_my_account]
+```
+
+<Tip>
+  Use shortcodes from third-party plugins to integrate membership systems, forms, wishlists, support tickets, and more!
+</Tip>
+
+### Programmatic Content Rendering
+
+For advanced use cases, hook into the endpoint action directly:
+
+```php
+// Hook into your custom endpoint
+add_action( 'woocommerce_account_my-custom-page_endpoint', 'render_my_custom_page' );
+
+function render_my_custom_page() {
+    // Your custom PHP logic here
+    echo '<div class="custom-endpoint-content">';
+    
+    // Query database, show user-specific data, etc.
+    $user_id = get_current_user_id();
+    $custom_data = get_user_meta( $user_id, 'custom_field', true );
+    
+    echo '<h2>Your Custom Data</h2>';
+    echo '<p>' . esc_html( $custom_data ) . '</p>';
+    
+    echo '</div>';
+}
+```
+
+<Note>
+  The plugin automatically registers the action hook `woocommerce_account_{endpoint}_endpoint` for each custom endpoint.
+</Note>
+
+## Endpoint Registration
+
+The plugin handles endpoint registration automatically:
+
+### Registration Process
+
+```php
+// Endpoint registration (class-wmab-endpoints.php:83-87)
+public function register_endpoints() {
+    foreach ( self::get_custom_endpoints() as $slug => $item ) {
+        add_rewrite_endpoint( $slug, EP_ROOT | EP_PAGES );
+    }
+}
+```
+
+<Steps>
+  <Step title="Fetch Custom Endpoints">
+    The plugin retrieves all enabled endpoint-type items from the menu configuration, excluding WooCommerce defaults.
+  </Step>
+  
+  <Step title="Register Rewrite Rules">
+    Each custom endpoint is registered with WordPress using `add_rewrite_endpoint()` with flags `EP_ROOT | EP_PAGES`.
+  </Step>
+  
+  <Step title="Add Query Vars">
+    The endpoint slugs are added to WooCommerce's query vars so they're recognized as valid My Account pages.
+  </Step>
+  
+  <Step title="Flush Permalinks">
+    After saving changes, a flag is set to flush rewrite rules on the next page load.
+  </Step>
+</Steps>
+
+### Query Vars Integration
+
+```php
+// Add custom endpoints to WooCommerce query vars (class-wmab-endpoints.php:93-98)
+public function add_query_vars( $vars ) {
+    foreach ( self::get_custom_endpoints() as $slug => $item ) {
+        $vars[ $slug ] = $slug;
+    }
+    return $vars;
+}
+```
+
+This ensures WooCommerce recognizes your custom endpoints as valid My Account pages.
+
+## Permalink Flushing
+
+After adding new custom endpoints, **you must flush rewrite rules** or the URLs will return 404 errors.
+
+### Automatic Flush Flag
+
+The plugin sets a flag when the menu is saved:
+
+```php
+// Set flush flag on save (class-wmab-settings.php:451)
+update_option( 'wmab_flush_rewrite', true );
+```
+
+On the next page load, rewrite rules are flushed automatically:
+
+```php
+// Auto-flush on next page load (class-wmab-endpoints.php:104-109)
+public function maybe_flush_rewrite() {
+    if ( get_option( 'wmab_flush_rewrite' ) ) {
+        flush_rewrite_rules();
+        delete_option( 'wmab_flush_rewrite' );
+    }
+}
+```
+
+### Manual Flush
+
+If endpoints still show 404 errors:
+
+<Steps>
+  <Step title="Go to Permalinks">
+    Navigate to **Settings → Permalinks** in WordPress admin.
+  </Step>
+  
+  <Step title="Save Changes">
+    Click the **Save Changes** button (no changes needed).
+  </Step>
+  
+  <Step title="Test Endpoint">
+    Visit your custom endpoint URL to verify it's working.
+  </Step>
+</Steps>
+
+## Access Control
+
+Custom endpoints respect the same role-based visibility settings as other menu items:
+
+```php
+// Role filtering (class-wmab-frontend.php:44-49)
+if ( ! empty( $item['roles'] ) ) {
+    if ( ! array_intersect( $item['roles'], $roles ) ) {
+        continue;  // Hide from users without matching roles
+    }
+}
+```
+
+See [Role-Based Visibility](/features/role-based-visibility) for details.
+
+## Use Cases
+
+<AccordionGroup>
+  <Accordion title="Membership Tiers">
+    Create endpoints for different membership levels:
+    - `/my-account/premium-perks/` → Show premium member benefits
+    - `/my-account/vip-lounge/` → Exclusive content for VIP members
+    
+    Use role restrictions to control access.
+  </Accordion>
+  
+  <Accordion title="Support System">
+    Add a support ticket endpoint:
+    - **Slug:** `support-tickets`
+    - **Content:** `[support_ticket_form]` (your plugin's shortcode)
+    
+    Customers can submit and track tickets directly from My Account.
+  </Accordion>
+  
+  <Accordion title="Loyalty Programs">
+    Display reward points and referral links:
+    - **Slug:** `reward-points`  
+    - **Content:** Custom PHP hook to show points balance
+    
+    Integrate with points/rewards plugins.
+  </Accordion>
+  
+  <Accordion title="Custom Forms">
+    Embed Contact Form 7, Gravity Forms, or WPForms:
+    - **Slug:** `contact-support`
+    - **Content:** `[contact-form-7 id="123"]`
+    
+    Collect feedback or additional customer information.
+  </Accordion>
+  
+  <Accordion title="External Integrations">
+    Show content from external APIs:
+    - **Slug:** `subscription-status`
+    - **Content:** Custom PHP code to fetch subscription data from Stripe, PayPal, etc.
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+### Endpoint Returns 404
+
+**Solution:** Flush permalinks manually at **Settings → Permalinks → Save Changes**.
+
+### Content Not Displaying
+
+**Possible causes:**
+1. Empty content field (displays default "Welcome to {title}" message)
+2. Shortcode plugin not active
+3. Custom hook not registered properly
+
+### Endpoint Not in Menu
+
+**Check:**
+- Item is **enabled** in builder
+- No role restrictions excluding your user
+- Menu has been saved after adding the item
+
+### Conflicts with Other Plugins
+
+**Solution:** Ensure your endpoint slug doesn't conflict with slugs registered by other plugins. Use unique, descriptive names.
+
+## Code Reference
+
+### Filter Hooks
+
+```php
+// Modify custom endpoint slugs before registration
+add_filter( 'wmab_custom_endpoints', function( $endpoints ) {
+    // Add or modify endpoints
+    return $endpoints;
+});
+```
+
+### Action Hooks
+
+```php
+// Before endpoint content is rendered
+add_action( 'wmab_before_endpoint_content', function( $item ) {
+    echo '<div class="custom-wrapper">';
+});
+
+// After endpoint content is rendered
+add_action( 'wmab_after_endpoint_content', function( $item ) {
+    echo '</div>';
+});
+```
+
+## Best Practices
+
+<Tip>
+  **Naming Convention:** Use descriptive slugs like `my-wishlist`, `support-tickets`, or `membership-dashboard` rather than generic names like `page1` or `custom`.
+</Tip>
+
+<Tip>
+  **Content Strategy:** Keep content concise and focused. For complex functionality, use shortcodes or custom hooks rather than inline HTML.
+</Tip>
+
+<Tip>
+  **Performance:** If your endpoint queries the database, implement caching to avoid slowdowns on high-traffic sites.
+</Tip>
+
+<Warning>
+  **Security:** Always sanitize and escape user input in custom endpoint content. The plugin sanitizes content with `wp_kses_post()`, but additional validation may be needed for custom forms.
+</Warning>
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Menu Builder" icon="bars" href="/features/menu-builder">
+    Learn how to organize and manage menu items
+  </Card>
+  <Card title="External Links" icon="link" href="/features/external-links">
+    Add links to external pages instead of endpoints
+  </Card>
+  <Card title="Role-Based Visibility" icon="users" href="/features/role-based-visibility">
+    Control access to custom endpoints by user role
+  </Card>
+  <Card title="Icons" icon="star" href="/features/icons">
+    Add icons to your custom endpoint menu items
+  </Card>
+</CardGroup>

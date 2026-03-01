@@ -1,0 +1,207 @@
+---
+title: Developer API Overview
+description: Extend and customize the My Account Menu Builder plugin with hooks, filters, and PHP classes
+---
+
+## Introduction
+
+My Account Menu Builder for WooCommerce provides a comprehensive developer API for extending and customizing the plugin's functionality. This API includes WordPress hooks, filters, and PHP classes that allow you to:
+
+- Modify menu items programmatically
+- Add custom menu item types
+- Integrate with third-party plugins
+- Customize endpoint URLs and behavior
+- Access menu configuration data
+
+## Plugin Architecture
+
+The plugin is built using a modular architecture with three main components:
+
+### Core Classes
+
+| Class | File | Purpose |
+|-------|------|----------|
+| `WMAB_Plugin` | `my-account-menu-builder-for-woocommerce.php` | Main plugin initialization and lifecycle management |
+| `WMAB_Settings` | `includes/class-wmab-settings.php` | Admin interface, menu configuration, and AJAX handlers |
+| `WMAB_Frontend` | `includes/class-wmab-frontend.php` | Frontend rendering and WooCommerce menu filtering |
+| `WMAB_Endpoints` | `includes/class-wmab-endpoints.php` | Custom endpoint registration and content rendering |
+
+### Plugin Constants
+
+The following constants are defined for use throughout the plugin:
+
+```php
+WMAB_VERSION                // Plugin version (e.g., '1.3.0')
+WMAB_PLUGIN_DIR            // Absolute path to plugin directory
+WMAB_PLUGIN_URL            // URL to plugin directory
+WMAB_PLUGIN_FILE           // Main plugin file path
+WMAB_PLUGIN_BASENAME       // Plugin basename for WordPress
+```
+
+## Getting Started
+
+### Accessing Menu Items Programmatically
+
+To retrieve the current menu configuration:
+
+```php
+$menu_items = WMAB_Settings::get_menu_items();
+
+foreach ($menu_items as $item) {
+    echo $item['title'];      // Menu item title
+    echo $item['type'];       // 'endpoint', 'link', or 'separator'
+    echo $item['endpoint'];   // Endpoint slug for endpoint types
+    echo $item['enabled'];    // Boolean enabled state
+}
+```
+
+### Modifying Menu Items
+
+Use the `woocommerce_account_menu_items` filter to modify the final menu:
+
+```php
+add_filter('woocommerce_account_menu_items', function($items) {
+    // $items is an array of slug => title
+    // Add custom item
+    $items['custom-page'] = __('My Custom Page', 'textdomain');
+    return $items;
+}, 999); // Use priority > 999 to run after this plugin
+```
+
+### Accessing White Label Settings
+
+Retrieve white label configuration:
+
+```php
+$white_label = WMAB_Settings::get_white_label();
+
+if ($white_label['enabled']) {
+    echo $white_label['plugin_name'];  // Custom plugin name
+    echo $white_label['author_name'];  // Custom author
+    echo $white_label['menu_title'];   // Settings tab label
+}
+```
+
+## Menu Item Structure
+
+Each menu item is an associative array with the following structure:
+
+```php
+[
+    'id'          => 'unique-id',           // Unique identifier (string)
+    'title'       => 'Menu Title',          // Display title
+    'type'        => 'endpoint',            // 'endpoint' | 'link' | 'separator'
+    'endpoint'    => 'my-page',             // Endpoint slug (for endpoint type)
+    'url'         => '',                    // External URL (for link type)
+    'content'     => '',                    // HTML/shortcode content (for endpoint)
+    'icon'        => 'dashicons-star',      // Icon CSS class
+    'roles'       => [],                    // Array of role slugs (empty = all)
+    'target'      => '_self',               // '_self' | '_blank'
+    'enabled'     => true,                  // Boolean enabled state
+    'is_default'  => false,                 // Whether this is a WooCommerce default
+    'css_class'   => '',                    // Additional CSS classes
+    'badge'       => '',                    // Static badge text
+    'badge_count' => '',                    // 'orders' | 'downloads' | ''
+    'description' => '',                    // Subtitle/description text
+]
+```
+
+## Endpoint System
+
+Custom endpoints are registered using WordPress's `add_rewrite_endpoint()` function. The plugin:
+
+1. Registers endpoints during the `init` action (priority 5)
+2. Adds query vars via the `woocommerce_get_query_vars` filter
+3. Renders content using dynamic `woocommerce_account_{slug}_endpoint` actions
+4. Automatically flushes rewrite rules when menu items are saved
+
+### Default WooCommerce Endpoints
+
+The following endpoints are never re-registered (they're handled by WooCommerce):
+
+- `dashboard`
+- `orders`
+- `downloads`
+- `edit-address`
+- `edit-account`
+- `customer-logout`
+- `payment-methods`
+- `view-order`
+- `order-pay`
+- `order-received`
+- `add-payment-method`
+- `delete-payment-method`
+- `set-default-payment-method`
+- `lost-password`
+
+## Integration Examples
+
+### Adding a Custom Endpoint with Content
+
+```php
+add_filter('wmab_menu_items', function($items) {
+    $items[] = [
+        'id'       => 'my-custom-endpoint',
+        'title'    => __('Support Tickets', 'textdomain'),
+        'type'     => 'endpoint',
+        'endpoint' => 'support-tickets',
+        'content'  => '[support_ticket_list]', // Your shortcode
+        'icon'     => 'dashicons dashicons-sos',
+        'enabled'  => true,
+    ];
+    return $items;
+});
+```
+
+### Role-Based Menu Items
+
+```php
+// Get all available roles
+$roles = WMAB_Settings::get_all_roles();
+// Returns: [['slug' => 'customer', 'name' => 'Customer'], ...]
+
+// Create a menu item visible only to wholesale customers
+$item = [
+    'title' => 'Wholesale Portal',
+    'roles' => ['wholesale_customer'], // Only show to this role
+    // ... other properties
+];
+```
+
+## AJAX Handlers
+
+The plugin provides AJAX endpoints for admin operations:
+
+- `wp_ajax_wmab_save_menu` - Save menu configuration
+- `wp_ajax_wmab_export_menu` - Export menu and settings as JSON
+- `wp_ajax_wmab_import_menu` - Import menu from JSON
+- `wp_ajax_wmab_save_settings` - Save white label settings
+
+All AJAX actions require:
+- `manage_woocommerce` capability
+- Valid nonce (`wmab_nonce`)
+
+## WooCommerce Compatibility
+
+The plugin declares compatibility with:
+
+- **High-Performance Order Storage (HPOS)** - Uses custom order tables
+- **Cart & Checkout Blocks** - Modern block-based checkout
+
+```php
+add_action('before_woocommerce_init', function() {
+    if (class_exists(\Automattic\WooCommerce\Utilities\FeaturesUtil::class)) {
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility(
+            'custom_order_tables',
+            WMAB_PLUGIN_FILE,
+            true
+        );
+    }
+});
+```
+
+## Next Steps
+
+- [Hooks & Filters Reference](/api/hooks-filters) - Complete list of available hooks
+- [Class Reference](/api/classes) - Detailed class and method documentation
+- [Contributing](/contributing) - Contributing and extending the plugin

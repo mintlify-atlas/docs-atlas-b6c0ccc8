@@ -1,0 +1,423 @@
+---
+title: 'External Links'
+description: 'Add external URLs and site pages to your My Account navigation menu'
+---
+
+External links allow you to add menu items that point to URLs outside the My Account section—such as external websites, blog posts, support pages, or other areas of your site.
+
+## Overview
+
+Unlike endpoints that create new pages under `/my-account/`, link-type menu items direct users to completely different URLs when clicked.
+
+<Info>
+  Links can open in the same tab or a new tab, making them perfect for external resources, documentation, or cross-site navigation.
+</Info>
+
+## Creating External Links
+
+<Steps>
+  <Step title="Open Menu Builder">
+    Navigate to **WooCommerce → Settings → My Account Menu**.
+  </Step>
+  
+  <Step title="Add New Item">
+    Click the **Add Item** button in the toolbar.
+  </Step>
+  
+  <Step title="Select Link Type">
+    In the modal, choose **Link** as the item type (instead of Endpoint).
+  </Step>
+  
+  <Step title="Configure Link">
+    - **Title:** Display name (e.g., "Help Center")
+    - **URL:** Full URL including `https://` (e.g., `https://example.com/help`)
+    - **Open In:** Same Tab or New Tab
+  </Step>
+  
+  <Step title="Save">
+    Click **Save Item**, then **Save Menu** to apply changes.
+  </Step>
+</Steps>
+
+## Link Configuration
+
+### URL Field
+
+The URL field accepts any valid web address:
+
+```php
+// URL sanitization (class-wmab-settings.php:517)
+'url' => esc_url_raw( $item['url'] ?? '' )
+```
+
+**Supported URL types:**
+
+<Tabs>
+  <Tab title="External Sites">
+    ```text
+    https://example.com/support
+    https://docs.yoursite.com
+    https://community.example.com/forum
+    ```
+  </Tab>
+  
+  <Tab title="Internal Pages">
+    ```text
+    https://yoursite.com/blog
+    https://yoursite.com/about-us
+    https://yoursite.com/contact
+    ```
+  </Tab>
+  
+  <Tab title="WordPress Pages">
+    ```text
+    https://yoursite.com/privacy-policy
+    https://yoursite.com/terms-and-conditions
+    ```
+  </Tab>
+  
+  <Tab title="Anchors & Query Strings">
+    ```text
+    https://yoursite.com/faq#contact
+    https://yoursite.com/shop?category=electronics
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+  Always include the protocol (`https://` or `http://`). URLs without protocols may not work correctly.
+</Warning>
+
+### Target Window
+
+Control whether links open in the same tab or a new tab:
+
+```php
+// Target validation (class-wmab-settings.php:521)
+'target' => in_array( $item['target'] ?? '', [ '_self', '_blank' ], true ) ? $item['target'] : '_self'
+```
+
+<Tabs>
+  <Tab title="Same Tab (_self)">
+    **Best for:**
+    - Internal pages on your site
+    - Pages within the same domain
+    - Seamless navigation flow
+    
+    User navigates away from My Account page.
+  </Tab>
+  
+  <Tab title="New Tab (_blank)">
+    **Best for:**
+    - External websites
+    - Documentation or help resources  
+    - Forms or tools you want users to keep open
+    
+    User stays on My Account in the original tab.
+  </Tab>
+</Tabs>
+
+<Tip>
+  For external links, **New Tab** is recommended to prevent users from losing their My Account session.
+</Tip>
+
+## How Links Work
+
+### Frontend Rendering
+
+Link items are rendered with a unique key prefix to avoid conflicts with real endpoints:
+
+```php
+// Link key generation (class-wmab-frontend.php:56-58)
+case 'link':
+    $key = 'wmab-link--' . $item['id'];
+    break;
+```
+
+In the WooCommerce navigation array, link items use the pattern `wmab-link--{id}`.
+
+### URL Override Filter
+
+The plugin hooks into WooCommerce's endpoint URL filter to redirect link items:
+
+```php
+// URL override for link items (class-wmab-frontend.php:95-113)
+public function filter_endpoint_url( $url, $endpoint, $value, $permalink ) {
+    // Link items
+    if ( 0 === strpos( $endpoint, 'wmab-link--' ) ) {
+        $id    = str_replace( 'wmab-link--', '', $endpoint );
+        $items = WMAB_Settings::get_menu_items();
+        foreach ( $items as $item ) {
+            if ( $item['id'] === $id && 'link' === $item['type'] && ! empty( $item['url'] ) ) {
+                return esc_url( $item['url'] );
+            }
+        }
+    }
+    return $url;
+}
+```
+
+When WooCommerce generates the menu, it calls `woocommerce_get_endpoint_url()` for each item. This filter intercepts link-type items and returns their custom URL instead.
+
+### JavaScript Target Handling
+
+The target attribute (_blank) is applied via JavaScript on the frontend:
+
+```javascript
+// Frontend script applies target attribute (assets/js/frontend.js)
+$.each(wmabFront.items, function(key, config) {
+    var $link = $('.woocommerce-MyAccount-navigation-link--' + key + ' a');
+    
+    if (config.target === '_blank') {
+        $link.attr('target', '_blank').attr('rel', 'noopener noreferrer');
+    }
+});
+```
+
+<Note>
+  The `rel="noopener noreferrer"` attribute is automatically added to `_blank` links for security.
+</Note>
+
+## Use Cases
+
+<AccordionGroup>
+  <Accordion title="Help & Documentation">
+    Link to your knowledge base or help center:
+    
+    - **Title:** Help Center
+    - **URL:** `https://help.yoursite.com`
+    - **Target:** New Tab
+    - **Icon:** `dashicons dashicons-sos`
+    
+    Customers can access support without leaving their account.
+  </Accordion>
+  
+  <Accordion title="Blog or News">
+    Drive traffic to your blog from the My Account area:
+    
+    - **Title:** Latest News
+    - **URL:** `https://yoursite.com/blog`
+    - **Target:** Same Tab
+    - **Icon:** `dashicons dashicons-megaphone`
+  </Accordion>
+  
+  <Accordion title="Social Media Profiles">
+    Add links to your social media:
+    
+    - **Title:** Follow Us
+    - **URL:** `https://facebook.com/yourpage`
+    - **Target:** New Tab
+    - **Icon:** Custom CSS icon or Dashicon
+  </Accordion>
+  
+  <Accordion title="Community Forums">
+    Link to external forums or community platforms:
+    
+    - **Title:** Community Forum
+    - **URL:** `https://community.yoursite.com`
+    - **Target:** New Tab
+    - **Icon:** `dashicons dashicons-groups`
+  </Accordion>
+  
+  <Accordion title="Affiliate Program">
+    Promote your affiliate or referral program:
+    
+    - **Title:** Refer & Earn
+    - **URL:** `https://yoursite.com/affiliate-program`
+    - **Target:** Same Tab
+    - **Icon:** `dashicons dashicons-megaphone`
+    - **Badge:** "New" (static badge)
+  </Accordion>
+  
+  <Accordion title="Terms & Policies">
+    Quick access to legal pages:
+    
+    - **Title:** Privacy Policy
+    - **URL:** `https://yoursite.com/privacy-policy`
+    - **Target:** Same Tab
+    - **Icon:** `dashicons dashicons-shield`
+  </Accordion>
+</AccordionGroup>
+
+## Visual Indicators
+
+Link items display a **"Link"** badge in the menu builder to distinguish them from endpoints:
+
+```javascript
+// Link badge rendering (admin.js:50-52)
+var typeBadge = item.type === 'link'
+    ? '<span class="wmab-item-badge wmab-badge-link">Link</span>'
+    : '<span class="wmab-item-badge wmab-badge-endpoint">Endpoint</span>';
+```
+
+In the item metadata, external URLs are shown with an external link icon:
+
+```javascript
+// URL preview in builder (admin.js:58-60)
+else if (item.type === 'link' && item.url) {
+    meta.push('<span><i class="dashicons dashicons-external"></i> ' + esc(item.url).substring(0, 40) + '</span>');
+}
+```
+
+## Combining Links with Other Features
+
+### Icons
+
+Add Dashicons to make links visually distinctive:
+
+```text
+📚 Help Center     → dashicons-book
+📢 Blog            → dashicons-megaphone  
+👥 Community       → dashicons-groups
+🛡️ Privacy Policy → dashicons-shield
+```
+
+See [Icons](/features/icons) for the full icon reference.
+
+### Badges
+
+Highlight new or important links with badges:
+
+```text
+Affiliate Program  [New]
+Help Center        [24/7]
+Sale Items         [Hot]
+```
+
+See [Badges & Counters](/features/badges-counters) for details.
+
+### Role-Based Visibility
+
+Restrict links to specific user roles:
+
+**Example:** Show "Wholesale Portal" link only to wholesale customers:
+- **URL:** `https://wholesale.yoursite.com`
+- **Roles:** `wholesale_customer`
+
+See [Role-Based Visibility](/features/role-based-visibility) for implementation.
+
+## Best Practices
+
+<Tip>
+  **Use HTTPS:** Always use secure URLs (`https://`) for external links to avoid browser security warnings.
+</Tip>
+
+<Tip>
+  **Open External Links in New Tab:** Set target to `_blank` for external sites to prevent users from losing their My Account session.
+</Tip>
+
+<Tip>
+  **Descriptive Titles:** Use clear, action-oriented titles like "View Help Center" or "Visit Blog" instead of generic "Click Here".
+</Tip>
+
+<Warning>
+  **Avoid Too Many External Links:** Excessive external links can distract users from their account tasks. Use them sparingly.
+</Warning>
+
+## Troubleshooting
+
+### Link Not Appearing in Menu
+
+**Check:**
+1. Item is **enabled** in the builder
+2. No role restrictions excluding your user role
+3. Menu has been saved after adding the link
+
+### Link Opens in Wrong Tab
+
+**Solution:** Edit the item and verify the **Open In** setting (Same Tab vs New Tab).
+
+### URL Not Working
+
+**Possible issues:**
+1. Missing protocol (`https://`)
+2. Typo in URL
+3. External site is down or blocking referrers
+
+**Test:** Copy the URL and paste it directly into your browser to verify it works.
+
+### Link Showing as Active When It Shouldn't
+
+**Cause:** Link URLs that match the current page URL will be styled as active by some themes.
+
+**Solution:** Ensure your link URLs are distinct from My Account page URLs.
+
+## Code Examples
+
+### Programmatic Link Creation
+
+```php
+// Add external link via code
+add_filter( 'wmab_menu_items', function( $items ) {
+    $items[] = [
+        'id'       => 'custom-help-link',
+        'title'    => 'Help Center',
+        'type'     => 'link',
+        'url'      => 'https://help.example.com',
+        'icon'     => 'dashicons dashicons-sos',
+        'target'   => '_blank',
+        'enabled'  => true,
+        'roles'    => [],  // Visible to all
+        'badge'    => '24/7',
+    ];
+    return $items;
+});
+```
+
+### Conditional Link URL
+
+```php
+// Change link URL based on user role
+add_filter( 'woocommerce_get_endpoint_url', function( $url, $endpoint ) {
+    if ( $endpoint === 'wmab-link--help' ) {
+        if ( current_user_can( 'wholesale_customer' ) ) {
+            return 'https://wholesale.example.com/help';
+        }
+        return 'https://help.example.com';
+    }
+    return $url;
+}, 10, 2 );
+```
+
+### Track Link Clicks
+
+```javascript
+// Google Analytics event tracking for external links
+jQuery(document).ready(function($) {
+    $('.woocommerce-MyAccount-navigation a[target="_blank"]').on('click', function() {
+        var linkText = $(this).text().trim();
+        gtag('event', 'click', {
+            'event_category': 'My Account',
+            'event_label': linkText,
+            'value': 1
+        });
+    });
+});
+```
+
+## Security Considerations
+
+<Warning>
+  **URL Validation:** The plugin sanitizes URLs using `esc_url_raw()`, but always verify external links point to trusted destinations.
+</Warning>
+
+<Info>
+  **Noopener/Noreferrer:** Links opening in new tabs automatically include `rel="noopener noreferrer"` to prevent reverse tabnabbing attacks.
+</Info>
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Custom Endpoints" icon="page" href="/features/custom-endpoints">
+    Create internal My Account pages instead of external links
+  </Card>
+  <Card title="Icons" icon="star" href="/features/icons">
+    Add visual icons to your link items
+  </Card>
+  <Card title="Badges & Counters" icon="bell" href="/features/badges-counters">
+    Highlight links with badges or counters
+  </Card>
+  <Card title="Role-Based Visibility" icon="users" href="/features/role-based-visibility">
+    Show links only to specific user roles
+  </Card>
+</CardGroup>

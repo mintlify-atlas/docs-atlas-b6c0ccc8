@@ -1,0 +1,278 @@
+---
+title: White-Label Mode
+description: Rebrand the plugin for client projects with custom name, author, and branding
+---
+
+White-label mode allows agencies and freelancers to rebrand the My Account Menu Builder plugin as their own product. This is perfect for client sites where you want to maintain your brand identity.
+
+## Accessing White-Label Settings
+
+<Steps>
+  <Step title="Navigate to Settings">
+    Go to **WooCommerce → Settings → My Account Menu** tab
+  </Step>
+  
+  <Step title="Open White Label Tab">
+    Click the **White Label** tab at the top of the page
+  </Step>
+  
+  <Step title="Configure Options">
+    Fill in your custom branding details and save
+  </Step>
+</Steps>
+
+## Configuration Options
+
+The white-label system provides six configuration fields:
+
+### Enable White Label
+
+<Info>
+Master toggle that activates all white-label functionality. When disabled, all other settings are ignored and the plugin displays default branding.
+</Info>
+
+Toggle this on to activate white-label mode. This is the master switch that controls whether your custom branding is applied.
+
+**Database key:** `enabled` (boolean)
+
+### Plugin Name
+
+Customize the plugin name shown throughout the WordPress admin.
+
+**Where it appears:**
+- Plugin settings page header
+- Admin notices and messages
+- Replaces "My Account Menu Builder for WooCommerce"
+
+**Database key:** `plugin_name` (string)
+
+**Example:**
+```
+My Custom Account Manager
+```
+
+### Author Name
+
+Set a custom author name for the plugin.
+
+**Where it appears:**
+- Plugin metadata (visible in plugins list if not hidden)
+- Attribution fields
+
+**Database key:** `author_name` (string)
+
+**Example:**
+```
+Your Agency Name
+```
+
+### Author URL
+
+Provide a link to your website or portfolio.
+
+**Where it appears:**
+- Author link in plugin metadata
+- May be used in attribution links
+
+**Database key:** `author_url` (string, URL)
+
+**Example:**
+```
+https://youragency.com
+```
+
+<Note>
+The URL must be valid. The plugin sanitizes this field with `esc_url_raw()` for security.
+</Note>
+
+### Settings Tab Label
+
+Customize the label shown in the WooCommerce Settings tab navigation.
+
+**Where it appears:**
+- WooCommerce Settings tabs (replaces "My Account Menu")
+
+**Database key:** `menu_title` (string)
+
+**Example:**
+```
+Account Menu
+```
+
+**Source code reference:**
+
+```php class-wmab-settings.php
+public function add_settings_tab( $tabs ) {
+    $wl = self::get_white_label();
+    $label = $wl['enabled'] && $wl['menu_title'] 
+        ? $wl['menu_title'] 
+        : __( 'My Account Menu', 'my-account-menu-builder-for-woocommerce' );
+    $tabs['wmab'] = $label;
+    return $tabs;
+}
+```
+
+### Hide from Plugins List
+
+Completely hide the plugin from the WordPress Plugins page.
+
+**Use case:**
+- Client sites where you don't want them to see the plugin
+- Full white-label deployments
+- Preventing accidental deactivation
+
+**Database key:** `hide_plugin` (boolean)
+
+<Warning>
+When enabled, the plugin will NOT appear in **Plugins → Installed Plugins**. To access settings, navigate directly to **WooCommerce → Settings → My Account Menu** or bookmark the URL.
+
+If you forget to disable this before handing off a site, you can access the plugin via the database or by using a plugin like "Code Snippets" to run:
+
+```php
+update_option('wmab_white_label', ['enabled' => false]);
+```
+</Warning>
+
+**Source code reference:**
+
+```php my-account-menu-builder-for-woocommerce.php
+public function hide_plugin( $plugins ) {
+    $plugin_file = plugin_basename( __FILE__ );
+    if ( isset( $plugins[ $plugin_file ] ) ) {
+        unset( $plugins[ $plugin_file ] );
+    }
+    return $plugins;
+}
+```
+
+## Data Storage
+
+White-label settings are stored in a single WordPress option:
+
+**Option name:** `wmab_white_label`
+
+**Structure:**
+
+```json
+{
+  "enabled": false,
+  "plugin_name": "My Account Menu Builder for WooCommerce",
+  "author_name": "",
+  "author_url": "",
+  "menu_title": "My Account Menu",
+  "hide_plugin": false
+}
+```
+
+## Saving Settings
+
+When you click **Save Settings**, the plugin:
+
+1. Validates and sanitizes all fields
+2. Saves to the `wmab_white_label` option
+3. Shows a success message: "Settings saved! Reload to see changes."
+4. Requires a page reload to apply changes
+
+**AJAX handler:** `wmab_save_settings` (class-wmab-settings.php:493)
+
+**Sanitization function:**
+
+```php class-wmab-settings.php
+private static function sanitize_white_label( $data ) {
+    return [
+        'enabled'     => (bool) ( $data['enabled'] ?? false ),
+        'plugin_name' => sanitize_text_field( $data['plugin_name'] ?? '' ),
+        'author_name' => sanitize_text_field( $data['author_name'] ?? '' ),
+        'author_url'  => esc_url_raw( $data['author_url'] ?? '' ),
+        'menu_title'  => sanitize_text_field( $data['menu_title'] ?? '' ),
+        'hide_plugin' => (bool) ( $data['hide_plugin'] ?? false ),
+    ];
+}
+```
+
+## Best Practices
+
+<Steps>
+  <Step title="Test Before Deployment">
+    Always test white-label settings on a staging site before applying to production
+  </Step>
+  
+  <Step title="Document Custom Branding">
+    Keep a record of your white-label configuration for each client in case you need to replicate it
+  </Step>
+  
+  <Step title="Use Export/Import">
+    When setting up multiple client sites, export the white-label settings from your template site and import to save time
+  </Step>
+  
+  <Step title="Avoid Hiding on Development Sites">
+    Don't enable "Hide from Plugins List" on development sites where you need easy access
+  </Step>
+</Steps>
+
+## Common Use Cases
+
+### Scenario 1: Agency Branding for Client Site
+
+```
+✓ Enable White Label: ON
+✓ Plugin Name: ClientName Account Manager
+✓ Author Name: Your Agency
+✓ Author URL: https://youragency.com
+✓ Settings Tab Label: Account Menu
+✓ Hide from Plugins List: ON
+```
+
+### Scenario 2: Freelancer Light Branding
+
+```
+✓ Enable White Label: ON
+✓ Plugin Name: Custom My Account Menu
+✓ Author Name: (leave empty)
+✓ Author URL: (leave empty)
+✓ Settings Tab Label: Account Menu
+✓ Hide from Plugins List: OFF
+```
+
+### Scenario 3: Internal/Private Plugin
+
+```
+✓ Enable White Label: ON
+✓ Plugin Name: My Company Account Tools
+✓ Author Name: Internal Dev Team
+✓ Author URL: https://intranet.company.com
+✓ Settings Tab Label: Company Account Tools
+✓ Hide from Plugins List: ON
+```
+
+## Reverting to Default Branding
+
+To restore the original plugin branding:
+
+<Steps>
+  <Step title="Navigate to Settings">
+    Go to **WooCommerce → Settings → My Account Menu → White Label**
+  </Step>
+  
+  <Step title="Disable White Label">
+    Toggle **Enable White Label** to OFF
+  </Step>
+  
+  <Step title="Save and Reload">
+    Click **Save Settings** and reload the page
+  </Step>
+</Steps>
+
+<Note>
+Disabling white-label mode does NOT delete your custom settings. They are preserved in the database so you can re-enable them later without re-entering the values.
+</Note>
+
+## Exporting White-Label Settings
+
+White-label settings are automatically included when you export your menu configuration. See [Export/Import](/advanced/export-import) for details.
+
+## Related Resources
+
+- [Export/Import JSON](/advanced/export-import) - Migrate settings between sites
+- [Troubleshooting](/advanced/troubleshooting) - Common white-label issues
+- [API Reference](/api/hooks-filters) - Filters and hooks for developers

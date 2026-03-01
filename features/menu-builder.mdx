@@ -1,0 +1,357 @@
+---
+title: 'Drag & Drop Menu Builder'
+description: 'Visual interface for building and customizing your WooCommerce My Account navigation menu'
+---
+
+The Menu Builder provides a powerful visual interface for creating and organizing your WooCommerce My Account menu without writing any code.
+
+## Overview
+
+The drag & drop menu builder is located at **WooCommerce → Settings → My Account Menu** and provides real-time preview of your menu changes.
+
+<Info>
+  All menu changes are saved to the database and applied site-wide immediately after clicking "Save Menu".
+</Info>
+
+## Accessing the Builder
+
+<Steps>
+  <Step title="Navigate to Settings">
+    Go to **WooCommerce → Settings** in your WordPress admin dashboard.
+  </Step>
+  
+  <Step title="Open My Account Menu Tab">
+    Click on the **My Account Menu** tab in the WooCommerce settings navigation.
+  </Step>
+  
+  <Step title="Start Building">
+    You'll see the drag & drop interface with your current menu items listed.
+  </Step>
+</Steps>
+
+## Interface Components
+
+### Toolbar Actions
+
+The builder toolbar (located at `/includes/class-wmab-settings.php:221-228`) provides quick access to common actions:
+
+```php
+// Available toolbar buttons
+'Add Item'         // Create new endpoint or link
+'Add Separator'    // Insert menu divider
+'Save Menu'        // Save all changes
+'Frontend Preview' // View changes on My Account page
+'Reset Defaults'   // Restore WooCommerce default menu
+'Export'          // Download menu configuration as JSON
+'Import'          // Upload menu configuration from JSON
+```
+
+### Menu Item List
+
+Each menu item displays:
+- **Icon** — Visual identifier (Dashicon)
+- **Title** — Menu item label
+- **Type Badge** — "Endpoint" or "Link"
+- **Status Badge** — "Disabled" if item is hidden
+- **Metadata** — URL, roles, badges, and settings preview
+- **Actions** — Duplicate, Edit, Delete buttons
+
+## Working with Menu Items
+
+### Adding Items
+
+<Tabs>
+  <Tab title="Via Button">
+    1. Click the **Add Item** button in the toolbar
+    2. Fill out the item configuration modal
+    3. Click **Save Item**
+    
+    The new item appears at the bottom of your menu list.
+  </Tab>
+  
+  <Tab title="Via Duplication">
+    1. Find an existing item you want to copy
+    2. Click the duplicate icon (📄) on that item
+    3. Edit the duplicated item as needed
+    
+    <Tip>Useful for creating similar items with slight variations.</Tip>
+  </Tab>
+</Tabs>
+
+### Reordering Items
+
+The menu uses jQuery UI Sortable (`assets/js/admin.js:172-179`) for drag & drop:
+
+```javascript
+$('#wmab-menu-list').sortable({
+    handle: '.wmab-item-drag',
+    placeholder: 'wmab-sortable-placeholder',
+    update: function(event, ui) {
+        // Sync order from DOM
+        var newItems = [];
+        $('#wmab-menu-list li').each(function() {
+            var idx = $(this).data('index');
+            newItems.push(items[idx]);
+        });
+        items = newItems;
+    }
+});
+```
+
+<Steps>
+  <Step title="Hover Over Item">
+    Move your mouse over any menu item to see the drag handle (☰ icon).
+  </Step>
+  
+  <Step title="Click and Hold">
+    Click and hold the drag handle on the left side of the item.
+  </Step>
+  
+  <Step title="Drag to Position">
+    Drag the item up or down to your desired position.
+  </Step>
+  
+  <Step title="Release">
+    Drop the item in its new position. The order updates automatically.
+  </Step>
+</Steps>
+
+<Warning>
+  Remember to click **Save Menu** to persist your reordering changes!
+</Warning>
+
+### Editing Items
+
+1. Click the edit icon (✏️) on any menu item
+2. The configuration modal opens with current values pre-filled
+3. Modify any fields as needed
+4. Click **Save Item** to apply changes
+
+All item properties can be edited except the item ID.
+
+### Deleting Items
+
+1. Click the delete icon (🗑️) on the item you want to remove
+2. Confirm the deletion in the browser prompt
+3. The item is immediately removed from the list
+4. Click **Save Menu** to persist the deletion
+
+<Note>
+  Deleting default WooCommerce items (Dashboard, Orders, etc.) doesn't break functionality—they can always be restored using **Reset Defaults**.
+</Note>
+
+## Live Preview Panel
+
+The right sidebar shows a real-time preview of how your menu will appear on the frontend:
+
+- Only **enabled** items are shown
+- **Separators** render as horizontal lines
+- **Icons and badges** display as configured
+- The first item has the `is-active` class applied
+
+```javascript
+// Preview rendering logic (admin.js:90-105)
+function renderPreview() {
+    var html = '<ul>';
+    $.each(items, function (i, item) {
+        if (!item.enabled) return;  // Skip disabled
+        if (item.type === 'separator') {
+            html += '<li class="wmab-pv-separator"><hr></li>';
+            return;
+        }
+        var icon = item.icon ? '<span class="wmab-pv-icon"><i class="' + esc(item.icon) + '"></i></span>' : '';
+        var badge = item.badge ? '<span class="wmab-pv-badge">' + esc(item.badge) + '</span>' : '';
+        var active = i === 0 ? ' class="is-active"' : '';
+        html += '<li' + active + '><a>' + icon + esc(item.title) + badge + '</a></li>';
+    });
+    html += '</ul>';
+    $('#wmab-preview').html(html);
+}
+```
+
+## Saving Changes
+
+<Steps>
+  <Step title="Review Changes">
+    Check the live preview panel to verify your menu looks correct.
+  </Step>
+  
+  <Step title="Click Save Menu">
+    Click the **Save Menu** button in the toolbar. An AJAX request saves your configuration.
+  </Step>
+  
+  <Step title="Success Notification">
+    You'll see a green success message: "Menu saved successfully!"
+  </Step>
+  
+  <Step title="Flush Permalinks">
+    If you added new custom endpoints, visit **Settings → Permalinks** and click "Save Changes" to flush rewrite rules.
+  </Step>
+</Steps>
+
+### Save Process
+
+When you click Save Menu, the plugin:
+
+1. **Serializes menu data** to JSON
+2. **Sends AJAX request** to `wp_ajax_wmab_save_menu`
+3. **Sanitizes each item** via `WMAB_Settings::sanitize_item()`
+4. **Updates database** option `wmab_menu_items`
+5. **Sets flush flag** to trigger permalink refresh
+
+```php
+// Save handler (class-wmab-settings.php:437-454)
+public function ajax_save_menu() {
+    check_ajax_referer( 'wmab_nonce', 'nonce' );
+    if ( ! current_user_can( 'manage_woocommerce' ) ) {
+        wp_send_json_error( 'Unauthorized' );
+    }
+
+    $raw = isset( $_POST['items'] ) ? json_decode( wp_unslash( $_POST['items'] ), true ) : [];
+    if ( ! is_array( $raw ) ) {
+        wp_send_json_error( 'Invalid data' );
+    }
+
+    $sanitized = array_map( [ __CLASS__, 'sanitize_item' ], $raw );
+    update_option( 'wmab_menu_items', $sanitized );
+    update_option( 'wmab_flush_rewrite', true );
+
+    wp_send_json_success( [ 'items' => $sanitized ] );
+}
+```
+
+## Import & Export
+
+### Exporting Menu Configuration
+
+<Steps>
+  <Step title="Click Export">
+    Click the **Export** button in the toolbar.
+  </Step>
+  
+  <Step title="Download JSON">
+    A JSON file downloads automatically with your menu configuration and white-label settings.
+  </Step>
+  
+  <Step title="Save Backup">
+    Store this file as a backup or to replicate the menu on another site.
+  </Step>
+</Steps>
+
+Exported JSON structure:
+
+```json
+{
+  "plugin": "my-account-menu-builder-for-woocommerce",
+  "version": "1.3.0",
+  "exported": "2024-02-28 10:30:00",
+  "items": [
+    {
+      "id": "dashboard",
+      "title": "Dashboard",
+      "type": "endpoint",
+      "endpoint": "dashboard",
+      "icon": "dashicons dashicons-dashboard",
+      "enabled": true,
+      "roles": [],
+      "badge": "",
+      "badge_count": ""
+    }
+  ],
+  "settings": {
+    "enabled": false,
+    "plugin_name": "My Account Menu Builder for WooCommerce"
+  }
+}
+```
+
+### Importing Menu Configuration
+
+<Steps>
+  <Step title="Click Import">
+    Click the **Import** button in the toolbar.
+  </Step>
+  
+  <Step title="Select JSON File">
+    A file picker opens. Select your exported JSON file.
+  </Step>
+  
+  <Step title="Confirm Import">
+    The menu and settings are imported and applied immediately.
+  </Step>
+  
+  <Step title="Verify">
+    Check the preview panel to confirm the imported configuration.
+  </Step>
+</Steps>
+
+<Warning>
+  Importing **replaces** your entire current menu configuration. Export your current menu first if you want to keep a backup!
+</Warning>
+
+## Reset to Defaults
+
+Click **Reset Defaults** to restore the standard WooCommerce My Account menu:
+
+```php
+// Default items (class-wmab-settings.php:142-151)
+public static function get_default_woo_items() {
+    return [
+        self::make_item( 'dashboard',      __( 'Dashboard' ),       'endpoint', 'dashboard',      'dashicons dashicons-dashboard',   true ),
+        self::make_item( 'orders',         __( 'Orders' ),          'endpoint', 'orders',         'dashicons dashicons-cart',        true ),
+        self::make_item( 'downloads',      __( 'Downloads' ),       'endpoint', 'downloads',      'dashicons dashicons-download',    true ),
+        self::make_item( 'edit-address',   __( 'Addresses' ),       'endpoint', 'edit-address',   'dashicons dashicons-location',    true ),
+        self::make_item( 'edit-account',   __( 'Account Details' ), 'endpoint', 'edit-account',   'dashicons dashicons-admin-users', true ),
+        self::make_item( 'customer-logout',__( 'Logout' ),          'endpoint', 'customer-logout','dashicons dashicons-exit',        true ),
+    ];
+}
+```
+
+<Warning>
+  This action **cannot be undone**. Export your menu first if you want to preserve custom configurations!
+</Warning>
+
+## Quick Tips
+
+<AccordionGroup>
+  <Accordion title="Menu not updating on frontend?">
+    After saving, visit **Settings → Permalinks** and click "Save Changes" to flush rewrite rules. This is required when adding new custom endpoints.
+  </Accordion>
+  
+  <Accordion title="Item disappeared after save?">
+    Check if the item is marked as **Disabled** or has **role restrictions** that exclude your current user role.
+  </Accordion>
+  
+  <Accordion title="Can I add the same endpoint twice?">
+    Yes, but they'll share the same URL. Use different titles/icons to differentiate them visually.
+  </Accordion>
+  
+  <Accordion title="How many items can I add?">
+    There's no hard limit, but for UX best practices, keep your menu concise (8-12 items recommended).
+  </Accordion>
+</AccordionGroup>
+
+## Keyboard Shortcuts
+
+The builder interface supports standard browser shortcuts:
+
+- **Ctrl/Cmd + S** — Triggers save (if JavaScript focus is on the page)
+- **Escape** — Closes the edit modal
+- **Tab** — Navigate between form fields in the modal
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Custom Endpoints" icon="page" href="/features/custom-endpoints">
+    Create new My Account pages with custom content
+  </Card>
+  <Card title="External Links" icon="link" href="/features/external-links">
+    Add links to external URLs or other site pages
+  </Card>
+  <Card title="Icons" icon="star" href="/features/icons">
+    Add Dashicons to your menu items
+  </Card>
+  <Card title="Role-Based Visibility" icon="users" href="/features/role-based-visibility">
+    Control who can see specific menu items
+  </Card>
+</CardGroup>

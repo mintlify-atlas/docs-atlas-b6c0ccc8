@@ -1,0 +1,465 @@
+---
+title: Hooks & Filters
+description: Complete reference of WordPress actions and filters available in My Account Menu Builder
+---
+
+## Overview
+
+This page documents all WordPress hooks (actions and filters) provided by the My Account Menu Builder plugin. Hooks allow you to extend and customize the plugin's behavior without modifying core files.
+
+## Filters
+
+Filters allow you to modify data before it's used or displayed. Always return a value from filter callbacks.
+
+### woocommerce_account_menu_items
+
+**Priority:** 999  
+**File:** `includes/class-wmab-frontend.php:24`
+
+Filters the WooCommerce My Account menu items to replace the default menu with custom items.
+
+<ParamField path="$wc_items" type="array" required>
+  Default WooCommerce menu items as an associative array of `slug => title`
+</ParamField>
+
+<ResponseField name="return" type="array" required>
+  Modified array of menu items. Each key is the endpoint slug or special key, each value is the display title.
+</ResponseField>
+
+#### Example: Add Item After Plugin Processing
+
+```php
+add_filter('woocommerce_account_menu_items', function($items) {
+    // Add a custom item after all plugin processing
+    $items['affiliate-dashboard'] = __('Affiliate Dashboard', 'textdomain');
+    return $items;
+}, 1000); // Priority > 999 runs after this plugin
+```
+
+#### Example: Reorder Items
+
+```php
+add_filter('woocommerce_account_menu_items', function($items) {
+    // Move logout to the top
+    if (isset($items['customer-logout'])) {
+        $logout = $items['customer-logout'];
+        unset($items['customer-logout']);
+        $items = ['customer-logout' => $logout] + $items;
+    }
+    return $items;
+}, 1000);
+```
+
+---
+
+### woocommerce_get_endpoint_url
+
+**Priority:** 10  
+**File:** `includes/class-wmab-frontend.php:25`
+
+Filters the URL for WooCommerce account endpoints. This plugin uses it to handle link-type menu items and separators.
+
+<ParamField path="$url" type="string" required>
+  The endpoint URL
+</ParamField>
+
+<ParamField path="$endpoint" type="string" required>
+  The endpoint slug (e.g., 'orders', 'dashboard', 'wmab-link--abc123')
+</ParamField>
+
+<ParamField path="$value" type="string">
+  Optional value passed to the endpoint
+</ParamField>
+
+<ParamField path="$permalink" type="string" required>
+  The My Account page permalink
+</ParamField>
+
+<ResponseField name="return" type="string" required>
+  Modified endpoint URL
+</ResponseField>
+
+#### Example: Custom URL for Plugin Items
+
+```php
+add_filter('woocommerce_get_endpoint_url', function($url, $endpoint, $value, $permalink) {
+    // Redirect 'downloads' to an external platform
+    if ($endpoint === 'downloads') {
+        return 'https://downloads.example.com';
+    }
+    return $url;
+}, 10, 4);
+```
+
+#### How This Plugin Uses It
+
+```php
+// Link items use special prefix 'wmab-link--{id}'
+if (strpos($endpoint, 'wmab-link--') === 0) {
+    // Returns the custom URL from menu item config
+    return esc_url($item['url']);
+}
+
+// Separator items return '#' (non-clickable)
+if (strpos($endpoint, 'wmab-sep--') === 0) {
+    return '#';
+}
+```
+
+---
+
+### woocommerce_get_query_vars
+
+**Priority:** 10  
+**File:** `includes/class-wmab-endpoints.php:44`
+
+Adds custom endpoint slugs to WooCommerce's query vars so they are recognized as valid endpoints.
+
+<ParamField path="$vars" type="array" required>
+  Array of WooCommerce query variables (endpoint slugs)
+</ParamField>
+
+<ResponseField name="return" type="array" required>
+  Modified array with custom endpoint slugs added
+</ResponseField>
+
+#### Example: Add Your Own Query Var
+
+```php
+add_filter('woocommerce_get_query_vars', function($vars) {
+    $vars['my-custom-page'] = 'my-custom-page';
+    return $vars;
+}, 11); // After this plugin
+```
+
+---
+
+### woocommerce_settings_tabs_array
+
+**Priority:** 50  
+**File:** `includes/class-wmab-settings.php:25`
+
+Adds the "My Account Menu" tab to WooCommerce Settings (or uses custom white label name).
+
+<ParamField path="$tabs" type="array" required>
+  Array of WooCommerce settings tabs as `slug => label`
+</ParamField>
+
+<ResponseField name="return" type="array" required>
+  Modified tabs array with plugin tab added
+</ResponseField>
+
+#### Example: Rename the Tab
+
+```php
+add_filter('woocommerce_settings_tabs_array', function($tabs) {
+    if (isset($tabs['wmab'])) {
+        $tabs['wmab'] = __('Customer Portal', 'textdomain');
+    }
+    return $tabs;
+}, 51); // After plugin's priority 50
+```
+
+---
+
+### plugin_action_links_{basename}
+
+**Filter:** `plugin_action_links_my-account-menu-builder-for-woocommerce/my-account-menu-builder-for-woocommerce.php`  
+**Priority:** 10  
+**File:** `my-account-menu-builder-for-woocommerce.php:100`
+
+Adds a "Settings" link to the plugin row on the Plugins page.
+
+<ParamField path="$links" type="array" required>
+  Array of action links displayed for the plugin
+</ParamField>
+
+<ResponseField name="return" type="array" required>
+  Modified array of action links
+</ResponseField>
+
+---
+
+### all_plugins
+
+**Priority:** 10  
+**File:** `my-account-menu-builder-for-woocommerce.php:105`
+
+Removes the plugin from the plugins list when white-label "Hide from Plugins List" is enabled.
+
+<ParamField path="$plugins" type="array" required>
+  Array of all installed plugins
+</ParamField>
+
+<ResponseField name="return" type="array" required>
+  Modified plugins array (potentially with this plugin removed)
+</ResponseField>
+
+## Actions
+
+Actions allow you to execute custom code at specific points in the plugin's execution.
+
+### woocommerce_account_{slug}_endpoint
+
+**Priority:** 10  
+**File:** `includes/class-wmab-endpoints.php:48-50`
+
+Dynamic action hook that fires when rendering a custom endpoint. The `{slug}` is replaced with the actual endpoint slug.
+
+<ParamField path="$value" type="string">
+  Optional value passed in the URL (e.g., `/my-account/orders/123/` → `123`)
+</ParamField>
+
+#### Example: Custom Content for Specific Endpoint
+
+```php
+add_action('woocommerce_account_wishlist_endpoint', function($value) {
+    echo '<h2>' . __('My Wishlist', 'textdomain') . '</h2>';
+    echo do_shortcode('[user_wishlist]');
+});
+```
+
+#### Example: Endpoint with Parameter
+
+```php
+add_action('woocommerce_account_tickets_endpoint', function($ticket_id) {
+    if ($ticket_id) {
+        // Show specific ticket
+        echo '<h2>' . sprintf(__('Ticket #%s', 'textdomain'), $ticket_id) . '</h2>';
+    } else {
+        // Show all tickets
+        echo '<h2>' . __('Support Tickets', 'textdomain') . '</h2>';
+    }
+});
+```
+
+---
+
+### plugins_loaded
+
+**Priority:** 10  
+**File:** `my-account-menu-builder-for-woocommerce.php:75`
+
+The main plugin initialization happens on this hook. All classes are loaded and instantiated here.
+
+#### Example: Wait for Plugin to Load
+
+```php
+add_action('plugins_loaded', function() {
+    if (class_exists('WMAB_Settings')) {
+        // Plugin is loaded, safe to use its classes
+        $items = WMAB_Settings::get_menu_items();
+    }
+}, 11); // After plugin's priority 10
+```
+
+---
+
+### before_woocommerce_init
+
+**Priority:** 10  
+**File:** `my-account-menu-builder-for-woocommerce.php:42`
+
+Declares compatibility with WooCommerce features (HPOS and Cart/Checkout Blocks).
+
+---
+
+### init
+
+**Priority:** 5 (for endpoint registration), 20 (for rewrite flush)  
+**File:** `includes/class-wmab-endpoints.php:42-43`
+
+Custom endpoints are registered at priority 5, and rewrite rules are conditionally flushed at priority 20.
+
+#### Example: Register Additional Endpoint
+
+```php
+add_action('init', function() {
+    add_rewrite_endpoint('my-custom-page', EP_ROOT | EP_PAGES);
+}, 5);
+```
+
+---
+
+### admin_enqueue_scripts
+
+**Priority:** 10  
+**File:** `includes/class-wmab-settings.php:29`
+
+Enqueues admin CSS and JavaScript only on the WooCommerce Settings > My Account Menu tab.
+
+#### Available Localized Data
+
+The `wmabAdmin` JavaScript object contains:
+
+```javascript
+wmabAdmin = {
+    ajaxUrl: '/wp-admin/admin-ajax.php',
+    nonce: 'generated-nonce',
+    menuItems: [...],          // Current menu configuration
+    settings: {...},           // White label settings
+    roles: [...],              // All WordPress roles
+    defaultItems: [...],       // Default WooCommerce items
+    myAccountUrl: '/my-account/',
+    strings: {...}             // Translated UI strings
+};
+```
+
+---
+
+### wp_enqueue_scripts
+
+**Priority:** 10  
+**File:** `includes/class-wmab-frontend.php:26`
+
+Enqueues frontend CSS and JavaScript only on the My Account page (`is_account_page()`).
+
+#### Available Localized Data
+
+The `wmabFront` JavaScript object contains:
+
+```javascript
+wmabFront = {
+    items: {
+        'endpoint-slug': {
+            target: '_blank',               // Link target
+            icon: 'dashicons-star',        // Icon class
+            type: 'endpoint',              // Item type
+            css_class: 'custom-class',     // Additional classes
+            badge: '<span>...</span>',     // Badge HTML
+            description: 'Subtitle text'    // Description
+        }
+    }
+};
+```
+
+---
+
+### wp_ajax_wmab_save_menu
+
+**Priority:** 10  
+**File:** `includes/class-wmab-settings.php:32`
+
+AJAX handler for saving menu configuration from the admin interface.
+
+**Required Capability:** `manage_woocommerce`  
+**Nonce:** `wmab_nonce`  
+**POST Data:** `items` (JSON encoded array)
+
+---
+
+### wp_ajax_wmab_export_menu
+
+**Priority:** 10  
+**File:** `includes/class-wmab-settings.php:33`
+
+AJAX handler for exporting menu configuration as JSON.
+
+**Required Capability:** `manage_woocommerce`  
+**Nonce:** `wmab_nonce`
+
+---
+
+### wp_ajax_wmab_import_menu
+
+**Priority:** 10  
+**File:** `includes/class-wmab-settings.php:34`
+
+AJAX handler for importing menu configuration from JSON.
+
+**Required Capability:** `manage_woocommerce`  
+**Nonce:** `wmab_nonce`  
+**POST Data:** `json` (JSON string)
+
+---
+
+### wp_ajax_wmab_save_settings
+
+**Priority:** 10  
+**File:** `includes/class-wmab-settings.php:35`
+
+AJAX handler for saving white label settings.
+
+**Required Capability:** `manage_woocommerce`  
+**Nonce:** `wmab_nonce`  
+**POST Data:** `settings` (JSON encoded object)
+
+## Activation & Deactivation Hooks
+
+### register_activation_hook
+
+**File:** `my-account-menu-builder-for-woocommerce.php:76`
+
+Sets a flag to flush rewrite rules on the next page load after activation.
+
+```php
+public function activate() {
+    update_option('wmab_flush_rewrite', true);
+}
+```
+
+---
+
+### register_deactivation_hook
+
+**File:** `my-account-menu-builder-for-woocommerce.php:77`
+
+Flushes rewrite rules immediately when the plugin is deactivated.
+
+```php
+public function deactivate() {
+    flush_rewrite_rules();
+}
+```
+
+## Best Practices
+
+### Hook Priority Guidelines
+
+- Use priority **< 999** to run before the plugin's menu filter
+- Use priority **> 999** to run after the plugin's menu filter
+- Use priority **11+** to run after plugin initialization on `plugins_loaded`
+
+### Capability Checks
+
+Always verify user capabilities when modifying menu items:
+
+```php
+add_filter('woocommerce_account_menu_items', function($items) {
+    if (current_user_can('administrator')) {
+        $items['admin-tools'] = __('Admin Tools', 'textdomain');
+    }
+    return $items;
+}, 1000);
+```
+
+### Conditional Loading
+
+Check if the plugin is active before using its features:
+
+```php
+if (class_exists('WMAB_Settings')) {
+    // Safe to use plugin classes
+}
+```
+
+### Rewrite Rule Management
+
+After adding custom endpoints programmatically, flush rewrite rules:
+
+```php
+add_action('init', function() {
+    add_rewrite_endpoint('my-endpoint', EP_ROOT | EP_PAGES);
+    
+    // Only flush once
+    if (get_option('my_plugin_flush_needed')) {
+        flush_rewrite_rules();
+        delete_option('my_plugin_flush_needed');
+    }
+});
+```
+
+## Next Steps
+
+- [Class Reference](/api/classes) - PHP class methods and properties
+- [Developer API Overview](/api/overview) - Architecture and integration guide

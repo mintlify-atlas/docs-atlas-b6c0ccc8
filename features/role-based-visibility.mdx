@@ -1,0 +1,541 @@
+---
+title: 'Role-Based Visibility'
+description: 'Control which menu items are visible to specific WordPress user roles'
+---
+
+Role-based visibility allows you to show or hide menu items based on WordPress user roles, enabling you to create personalized navigation experiences for different customer types.
+
+## Overview
+
+Every menu item can be restricted to one or more user roles. Items with no role restrictions are visible to everyone (including guests if they somehow access the My Account page).
+
+<Info>
+  Role filtering happens server-side during menu generation, so restricted items are completely hidden from unauthorized users—not just visually hidden with CSS.
+</Info>
+
+## How It Works
+
+### Role Filtering Logic
+
+When the menu is generated, the plugin checks the current user's roles against each item's allowed roles:
+
+```php
+// Role filtering (class-wmab-frontend.php:33-49)
+private static function get_items_with_keys() {
+    $items   = WMAB_Settings::get_menu_items();
+    $current = wp_get_current_user();
+    $roles   = (array) $current->roles;
+    $result  = [];
+
+    foreach ( $items as $item ) {
+        if ( empty( $item['enabled'] ) ) {
+            continue;
+        }
+
+        // Role filtering
+        if ( ! empty( $item['roles'] ) ) {
+            if ( ! array_intersect( $item['roles'], $roles ) ) {
+                continue;  // Skip item if user doesn't have any matching roles
+            }
+        }
+
+        // ... add item to menu
+    }
+
+    return $result;
+}
+```
+
+<Steps>
+  <Step title="Get Current User Roles">
+    WordPress returns an array of role slugs for the logged-in user (e.g., `['customer']` or `['wholesale_customer', 'subscriber']`).
+  </Step>
+  
+  <Step title="Check Item Roles">
+    If the item has no role restrictions (`roles` is empty), it's shown to everyone.
+  </Step>
+  
+  <Step title="Match Roles">
+    If the item has role restrictions, PHP's `array_intersect()` checks if the user has at least one matching role.
+  </Step>
+  
+  <Step title="Show or Hide">
+    Items with matching roles are included in the menu. Items without matches are completely excluded.
+  </Step>
+</Steps>
+
+## Configuring Role Visibility
+
+<Steps>
+  <Step title="Open Item Editor">
+    Click the edit button (✏️) on any menu item, or create a new item.
+  </Step>
+  
+  <Step title="Find Roles Section">
+    Scroll to the **Visible to Roles** section in the modal.
+  </Step>
+  
+  <Step title="Select Roles">
+    Check the boxes for roles that should see this item. Leave all unchecked to show to everyone.
+  </Step>
+  
+  <Step title="Save">
+    Click **Save Item**, then **Save Menu**.
+  </Step>
+</Steps>
+
+### Role Checkboxes
+
+The builder displays all available WordPress roles as checkboxes:
+
+```php
+// Get all WordPress roles (class-wmab-settings.php:130-136)
+public static function get_all_roles() {
+    $roles = [];
+    foreach ( wp_roles()->role_names as $slug => $name ) {
+        $roles[] = [ 'slug' => $slug, 'name' => $name ];
+    }
+    return $roles;
+}
+```
+
+This includes:
+- Default WordPress roles (Administrator, Editor, Author, Contributor, Subscriber)
+- WooCommerce roles (Customer, Shop Manager)
+- Custom roles added by plugins (Wholesale Customer, VIP Member, etc.)
+
+<Note>
+  The checkbox grid is dynamically populated based on roles registered in your WordPress installation.
+</Note>
+
+## Default WordPress Roles
+
+### WooCommerce Default Roles
+
+<Tabs>
+  <Tab title="customer">
+    **Standard WooCommerce customer role.**
+    
+    - Can place orders
+    - Can view order history
+    - Can manage account details
+    
+    This is the most common role for My Account menu restrictions.
+  </Tab>
+  
+  <Tab title="shop_manager">
+    **WooCommerce shop manager role.**
+    
+    - Can manage products and orders
+    - Has access to WooCommerce settings
+    - Higher privileges than customers
+    
+    Useful for showing admin-related links to shop managers.
+  </Tab>
+</Tabs>
+
+### Core WordPress Roles
+
+<Tabs>
+  <Tab title="administrator">
+    **Full site access.**
+    
+    Show debug links, admin panels, or testing endpoints.
+  </Tab>
+  
+  <Tab title="subscriber">
+    **Registered users without purchasing.**
+    
+    Show limited menu options for non-customers who have accounts.
+  </Tab>
+</Tabs>
+
+## Use Cases
+
+<AccordionGroup>
+  <Accordion title="Wholesale Customers">
+    **Scenario:** You have a custom `wholesale_customer` role and want to show wholesale-specific menu items.
+    
+    **Configuration:**
+    - **Item:** Wholesale Portal
+    - **Type:** Link
+    - **URL:** `https://wholesale.yoursite.com`
+    - **Roles:** `wholesale_customer`
+    - **Icon:** `dashicons-businessperson`
+    
+    Regular customers won't see this item at all.
+  </Accordion>
+  
+  <Accordion title="VIP / Premium Members">
+    **Scenario:** Premium members get access to exclusive content.
+    
+    **Configuration:**
+    - **Item:** VIP Lounge
+    - **Type:** Endpoint
+    - **Endpoint:** `vip-lounge`
+    - **Roles:** `premium_member`, `vip_member`
+    - **Icon:** `dashicons-awards`
+    - **Badge:** "Exclusive"
+    
+    Only users with `premium_member` OR `vip_member` roles can see it.
+  </Accordion>
+  
+  <Accordion title="Admin/Shop Manager Tools">
+    **Scenario:** Show debug or management tools to shop managers.
+    
+    **Configuration:**
+    - **Item:** Admin Tools
+    - **Type:** Link
+    - **URL:** `https://yoursite.com/wp-admin`
+    - **Roles:** `administrator`, `shop_manager`
+    - **Icon:** `dashicons-admin-tools`
+    - **Target:** New Tab
+    
+    Customers never see this admin link.
+  </Accordion>
+  
+  <Accordion title="Subscription Tiers">
+    **Scenario:** Different content for different subscription levels.
+    
+    **Configuration:**
+    
+    **Basic Plan Page:**
+    - **Roles:** `subscriber`, `basic_subscriber`
+    
+    **Pro Plan Page:**
+    - **Roles:** `pro_subscriber`
+    
+    **Enterprise Page:**
+    - **Roles:** `enterprise_subscriber`
+    
+    Each group sees only their tier-specific content.
+  </Accordion>
+  
+  <Accordion title="Affiliate Program">
+    **Scenario:** Show affiliate dashboard only to users enrolled in your affiliate program.
+    
+    **Configuration:**
+    - **Item:** Affiliate Dashboard
+    - **Type:** Endpoint
+    - **Endpoint:** `affiliate-dashboard`
+    - **Roles:** `affiliate`
+    - **Icon:** `dashicons-megaphone`
+    - **Badge:** "Earn $$$"
+    
+    Regular customers don't see the affiliate section.
+  </Accordion>
+</AccordionGroup>
+
+## Multiple Role Support
+
+An item can be visible to multiple roles simultaneously. If a user has **any** of the specified roles, they'll see the item.
+
+**Example:**
+
+```php
+// Item configuration
+[
+    'title' => 'Support Portal',
+    'roles' => ['premium_member', 'vip_member', 'administrator'],
+]
+```
+
+Users with `premium_member` **OR** `vip_member` **OR** `administrator` can see this item.
+
+### Role Logic: OR vs AND
+
+The plugin uses **OR logic** for multiple roles:
+
+```php
+// Match if user has ANY of the specified roles
+if ( ! array_intersect( $item['roles'], $roles ) ) {
+    continue;  // No match
+}
+```
+
+There's no built-in AND logic (requiring all roles). If you need that:
+
+```php
+// Custom filter for AND logic
+add_filter( 'wmab_menu_items', function( $items ) {
+    foreach ( $items as &$item ) {
+        if ( $item['id'] === 'special-item' ) {
+            // Require BOTH premium_member AND verified_user
+            $user = wp_get_current_user();
+            if ( ! in_array( 'premium_member', $user->roles ) || ! in_array( 'verified_user', $user->roles ) ) {
+                $item['enabled'] = false;
+            }
+        }
+    }
+    return $items;
+});
+```
+
+## Custom Roles
+
+The plugin works seamlessly with custom roles added by plugins or code.
+
+### Popular Role Manager Plugins
+
+- **Members** — Create and manage custom roles
+- **User Role Editor** — Edit role capabilities
+- **WooCommerce Wholesale Prices** — Adds wholesale customer roles
+- **Paid Memberships Pro** — Membership level roles
+- **WooCommerce Memberships** — Membership plan roles
+
+### Creating Custom Roles Programmatically
+
+```php
+// Add custom role on plugin activation
+register_activation_hook( __FILE__, function() {
+    add_role(
+        'vip_member',
+        __( 'VIP Member' ),
+        [
+            'read'         => true,
+            'edit_posts'   => false,
+            'delete_posts' => false,
+        ]
+    );
+});
+```
+
+Once the role is registered, it automatically appears in the My Account Menu Builder role selector.
+
+## Role Assignment
+
+How users get assigned roles is outside the scope of this plugin, but common methods include:
+
+### Manual Assignment
+
+**Via WordPress Admin:**
+1. Go to **Users → All Users**
+2. Edit a user
+3. Change **Role** dropdown
+4. Click **Update User**
+
+### Automatic Assignment
+
+**On Purchase (WooCommerce):**
+
+```php
+// Assign role when specific product is purchased
+add_action( 'woocommerce_order_status_completed', function( $order_id ) {
+    $order = wc_get_order( $order_id );
+    foreach ( $order->get_items() as $item ) {
+        $product_id = $item->get_product_id();
+        if ( $product_id == 123 ) {  // Replace with your product ID
+            $user_id = $order->get_user_id();
+            $user = new WP_User( $user_id );
+            $user->add_role( 'premium_member' );
+        }
+    }
+});
+```
+
+**On Registration:**
+
+```php
+// Assign custom role instead of default 'customer'
+add_action( 'user_register', function( $user_id ) {
+    $user = new WP_User( $user_id );
+    $user->remove_role( 'customer' );
+    $user->add_role( 'basic_member' );
+});
+```
+
+## Combining with Other Features
+
+### Role + Badge
+
+Show role-specific badges:
+
+```php
+// VIP members see special badge
+[
+    'title'  => 'Exclusive Deals',
+    'roles'  => ['vip_member'],
+    'badge'  => 'VIP Only',
+    'icon'   => 'dashicons-awards',
+]
+```
+
+### Role + External Link
+
+Role-restricted external links:
+
+```php
+// Wholesale portal link for wholesale customers only
+[
+    'title'  => 'Wholesale Portal',
+    'type'   => 'link',
+    'url'    => 'https://wholesale.example.com',
+    'roles'  => ['wholesale_customer'],
+    'target' => '_blank',
+    'icon'   => 'dashicons-businessperson',
+]
+```
+
+### Role + Custom Endpoint
+
+Create role-specific My Account pages:
+
+```php
+// Admin-only debug page
+[
+    'title'    => 'System Info',
+    'type'     => 'endpoint',
+    'endpoint' => 'system-info',
+    'roles'    => ['administrator'],
+    'icon'     => 'dashicons-admin-tools',
+    'content'  => '[system_debug_shortcode]',
+]
+```
+
+## Testing Role Visibility
+
+<Steps>
+  <Step title="Create Test User">
+    Create a new WordPress user with the role you want to test.
+  </Step>
+  
+  <Step title="Logout">
+    Logout from your admin account.
+  </Step>
+  
+  <Step title="Login as Test User">
+    Login with the test user credentials.
+  </Step>
+  
+  <Step title="Visit My Account">
+    Navigate to the WooCommerce My Account page and verify which menu items are visible.
+  </Step>
+  
+  <Step title="Switch Roles">
+    Change the test user's role (via admin or plugin) and check menu again.
+  </Step>
+</Steps>
+
+<Tip>
+  Use the **User Switching** plugin to quickly switch between user accounts without logging out.
+</Tip>
+
+## Security Considerations
+
+<Warning>
+  **Server-Side Filtering:** Role visibility is enforced server-side. Items are excluded from the menu array before rendering, so users cannot bypass restrictions with browser dev tools.
+</Warning>
+
+<Info>
+  **Endpoint Access:** Even if a menu item is hidden, users can still access the endpoint URL directly if they know it. To fully restrict access, add capability checks to your endpoint content:
+</Info>
+
+```php
+// Restrict endpoint access by role
+add_action( 'woocommerce_account_vip-lounge_endpoint', function() {
+    $user = wp_get_current_user();
+    if ( ! in_array( 'vip_member', $user->roles ) ) {
+        wp_die( __( 'You do not have permission to access this page.' ) );
+    }
+    
+    // Render VIP content
+    echo '<h2>Welcome to the VIP Lounge</h2>';
+});
+```
+
+## Troubleshooting
+
+### Item Not Showing for Expected Role
+
+**Check:**
+1. The user actually has the role assigned (verify in **Users → Edit User**)
+2. The role slug matches exactly (case-sensitive)
+3. The item is **enabled** in the builder
+4. Menu changes have been saved
+
+**Debug:**
+
+```php
+// Check current user roles
+add_action( 'woocommerce_account_dashboard', function() {
+    $user = wp_get_current_user();
+    echo '<pre>'; print_r( $user->roles ); echo '</pre>';
+});
+```
+
+### Item Showing for Wrong Role
+
+**Possible causes:**
+1. No roles selected (item visible to all)
+2. User has multiple roles, one of which matches
+3. Custom role has same slug as restricted role
+
+### Custom Role Not Appearing in Builder
+
+**Solution:** The role might not be registered yet. Ensure custom roles are added before the My Account Menu Builder settings page loads:
+
+```php
+// Register custom role early
+add_action( 'init', function() {
+    if ( ! get_role( 'vip_member' ) ) {
+        add_role( 'vip_member', 'VIP Member', ['read' => true] );
+    }
+}, 1 );
+```
+
+## Advanced: Conditional Role Assignment
+
+Combine role-based visibility with dynamic role assignment for powerful workflows:
+
+```php
+// Grant VIP role after 10 purchases
+add_action( 'woocommerce_order_status_completed', function( $order_id ) {
+    $order = wc_get_order( $order_id );
+    $user_id = $order->get_user_id();
+    
+    if ( $user_id ) {
+        $order_count = wc_get_customer_order_count( $user_id );
+        if ( $order_count >= 10 ) {
+            $user = new WP_User( $user_id );
+            $user->add_role( 'vip_member' );
+        }
+    }
+});
+```
+
+Now your "VIP Lounge" menu item (restricted to `vip_member` role) automatically appears after the 10th purchase.
+
+## Best Practices
+
+<Tip>
+  **Default to Visible:** Only use role restrictions when necessary. Most items should be visible to all customers.
+</Tip>
+
+<Tip>
+  **Clear Role Names:** Use descriptive role slugs like `wholesale_customer` instead of `wc1` for maintainability.
+</Tip>
+
+<Tip>
+  **Document Roles:** Keep a list of custom roles and their purposes for future reference.
+</Tip>
+
+<Warning>
+  **Don't Rely Solely on Menu Visibility:** Always add capability checks to sensitive endpoint content to prevent direct URL access.
+</Warning>
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Custom Endpoints" icon="page" href="/features/custom-endpoints">
+    Create role-specific My Account pages
+  </Card>
+  <Card title="External Links" icon="link" href="/features/external-links">
+    Add role-restricted external links
+  </Card>
+  <Card title="Badges & Counters" icon="bell" href="/features/badges-counters">
+    Highlight role-specific items with badges
+  </Card>
+  <Card title="Menu Builder" icon="bars" href="/features/menu-builder">
+    Manage all menu items and their visibility
+  </Card>
+</CardGroup>

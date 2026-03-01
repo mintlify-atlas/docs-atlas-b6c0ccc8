@@ -1,0 +1,507 @@
+---
+title: 'Icon Support'
+description: 'Add Dashicons to your My Account menu items for enhanced visual navigation'
+---
+
+The plugin includes full support for WordPress Dashicons, allowing you to add visual icons to every menu item for better user experience and faster navigation.
+
+## Overview
+
+Icons appear to the left of menu item titles and are rendered using the WordPress Dashicons font library, which is included with every WordPress installation.
+
+<Info>
+  Dashicons are vector icons that scale perfectly at any size and automatically match your site's color scheme.
+</Info>
+
+## Adding Icons to Menu Items
+
+<Steps>
+  <Step title="Open Item Editor">
+    Click the edit button (✏️) on any menu item, or create a new item.
+  </Step>
+  
+  <Step title="Find Icon Field">
+    Scroll to the **Icon** field in the modal.
+  </Step>
+  
+  <Step title="Choose Icon">
+    Either:
+    - Click a preset icon from the grid picker
+    - Manually enter the icon class (e.g., `dashicons dashicons-star-filled`)
+  </Step>
+  
+  <Step title="Preview Updates">
+    The icon preview next to the input field updates in real-time.
+  </Step>
+  
+  <Step title="Save">
+    Click **Save Item** to apply the icon.
+  </Step>
+</Steps>
+
+## Icon Class Format
+
+Dashicons use a two-part CSS class structure:
+
+```css
+dashicons dashicons-{icon-name}
+```
+
+**Examples:**
+```text
+dashicons dashicons-dashboard
+dashicons dashicons-cart
+dashicons dashicons-star-filled
+dashicons dashicons-admin-users
+```
+
+<Warning>
+  Both classes are required. Using only `dashicons-cart` without `dashicons` won't render the icon.
+</Warning>
+
+## Icon Picker Interface
+
+The menu builder includes a visual icon picker with 36 pre-selected icons:
+
+```php
+// Icon picker presets (class-wmab-settings.php:342-361)
+$icons = [
+    'dashicons dashicons-dashboard',
+    'dashicons dashicons-cart',
+    'dashicons dashicons-download',
+    'dashicons dashicons-location',
+    'dashicons dashicons-admin-users',
+    'dashicons dashicons-exit',
+    'dashicons dashicons-heart',
+    'dashicons dashicons-star-filled',
+    'dashicons dashicons-admin-links',
+    'dashicons dashicons-email',
+    'dashicons dashicons-phone',
+    'dashicons dashicons-calendar',
+    'dashicons dashicons-money-alt',
+    'dashicons dashicons-clipboard',
+    'dashicons dashicons-bell',
+    'dashicons dashicons-shield',
+    'dashicons dashicons-tag',
+    'dashicons dashicons-admin-home',
+    'dashicons dashicons-format-chat',
+    'dashicons dashicons-tickets-alt',
+    'dashicons dashicons-admin-tools',
+    'dashicons dashicons-lock',
+    'dashicons dashicons-groups',
+    'dashicons dashicons-media-document',
+    'dashicons dashicons-portfolio',
+    'dashicons dashicons-archive',
+    'dashicons dashicons-megaphone',
+    'dashicons dashicons-awards',
+    'dashicons dashicons-lightbulb',
+    'dashicons dashicons-thumbs-up',
+    'dashicons dashicons-hammer',
+    'dashicons dashicons-visibility',
+    'dashicons dashicons-admin-settings',
+    'dashicons dashicons-sos',
+    'dashicons dashicons-info',
+];
+```
+
+### Using the Picker
+
+<Tabs>
+  <Tab title="Click to Select">
+    Simply click any icon in the grid. The icon class is automatically populated in the input field and the preview updates.
+  </Tab>
+  
+  <Tab title="Hover for Name">
+    Hover over any icon to see its full class name in a tooltip.
+  </Tab>
+  
+  <Tab title="Manual Entry">
+    Type or paste any Dashicon class directly into the input field for icons not shown in the picker.
+  </Tab>
+</Tabs>
+
+## Default Icons
+
+When you reset to WooCommerce defaults, these icons are used:
+
+```php
+// Default WooCommerce menu icons (class-wmab-settings.php:144-149)
+self::make_item( 'dashboard',       __( 'Dashboard' ),       'endpoint', 'dashboard',       'dashicons dashicons-dashboard',    true ),
+self::make_item( 'orders',          __( 'Orders' ),          'endpoint', 'orders',          'dashicons dashicons-cart',         true ),
+self::make_item( 'downloads',       __( 'Downloads' ),       'endpoint', 'downloads',       'dashicons dashicons-download',     true ),
+self::make_item( 'edit-address',    __( 'Addresses' ),       'endpoint', 'edit-address',    'dashicons dashicons-location',     true ),
+self::make_item( 'edit-account',    __( 'Account Details' ), 'endpoint', 'edit-account',    'dashicons dashicons-admin-users',  true ),
+self::make_item( 'customer-logout', __( 'Logout' ),          'endpoint', 'customer-logout', 'dashicons dashicons-exit',         true ),
+```
+
+## Complete Dashicons Reference
+
+### E-Commerce Icons
+
+<Tabs>
+  <Tab title="Shopping">
+    - `dashicons-cart` — Shopping cart
+    - `dashicons-products` — Products grid
+    - `dashicons-tag` — Price tag
+    - `dashicons-money-alt` — Money/payment
+    - `dashicons-tickets-alt` — Tickets/coupons
+  </Tab>
+  
+  <Tab title="Orders & Shipping">
+    - `dashicons-archive` — Archive/orders
+    - `dashicons-download` — Downloads
+    - `dashicons-upload` — Uploads
+    - `dashicons-clipboard` — Clipboard/invoice
+    - `dashicons-portfolio` — Portfolio/documents
+  </Tab>
+</Tabs>
+
+### User & Account Icons
+
+<Tabs>
+  <Tab title="Users">
+    - `dashicons-admin-users` — Single user
+    - `dashicons-groups` — Multiple users
+    - `dashicons-businessperson` — Business user
+    - `dashicons-id` — ID card
+    - `dashicons-id-alt` — ID badge
+  </Tab>
+  
+  <Tab title="Account Actions">
+    - `dashicons-lock` — Security/password
+    - `dashicons-unlock` — Unlocked
+    - `dashicons-visibility` — Show/view
+    - `dashicons-hidden` — Hide
+    - `dashicons-exit` — Logout
+  </Tab>
+</Tabs>
+
+### Navigation Icons
+
+```text
+dashicons-dashboard        — Dashboard home
+dashicons-admin-home       — Home
+dashicons-admin-site       — Website
+dashicons-admin-generic    — Settings cog
+dashicons-admin-settings   — Advanced settings
+dashicons-admin-tools      — Tools
+dashicons-admin-links      — Links/URLs
+```
+
+### Communication Icons
+
+```text
+dashicons-email            — Email/messages
+dashicons-email-alt        — Email alternate
+dashicons-format-chat      — Chat bubble
+dashicons-phone            — Phone
+dashicons-megaphone        — Announcements
+dashicons-bell             — Notifications
+```
+
+### Location & Address Icons
+
+```text
+dashicons-location         — Map pin
+dashicons-location-alt     — Location alternate
+dashicons-admin-site-alt   — Building
+dashicons-admin-home       — House
+```
+
+### Content & Documents
+
+```text
+dashicons-media-document   — Document
+dashicons-media-text       — Text file
+dashicons-media-archive    — Archive file
+dashicons-pdf              — PDF file
+dashicons-portfolio        — Portfolio/folder
+```
+
+### Actions & Status
+
+```text
+dashicons-yes              — Checkmark
+dashicons-yes-alt          — Circle checkmark
+dashicons-no               — X mark
+dashicons-no-alt           — Circle X
+dashicons-plus             — Plus sign
+dashicons-minus            — Minus sign
+dashicons-heart            — Favorite/like
+dashicons-star-filled      — Filled star
+dashicons-star-empty       — Empty star
+```
+
+### Support & Help
+
+```text
+dashicons-sos              — Life preserver (help)
+dashicons-info             — Information
+dashicons-warning          — Warning triangle
+dashicons-flag             — Flag/report
+dashicons-lightbulb        — Idea/tip
+```
+
+### Social & Engagement
+
+```text
+dashicons-thumbs-up        — Like
+dashicons-thumbs-down      — Dislike
+dashicons-awards           — Trophy/achievement
+dashicons-shield           — Protection/security
+dashicons-shield-alt       — Shield alternate
+```
+
+<Tip>
+  View the complete Dashicons library at [developer.wordpress.org/resource/dashicons](https://developer.wordpress.org/resource/dashicons)
+</Tip>
+
+## Frontend Icon Rendering
+
+Icons are rendered via JavaScript on the frontend:
+
+```javascript
+// Frontend icon injection (assets/js/frontend.js)
+$.each(wmabFront.items, function(key, config) {
+    var $link = $('.woocommerce-MyAccount-navigation-link--' + key + ' a');
+    
+    // Add icon if specified
+    if (config.icon) {
+        $link.prepend('<i class="' + config.icon + '"></i> ');
+    }
+});
+```
+
+The Dashicons font is enqueued automatically:
+
+```php
+// Dashicons enqueue (class-wmab-frontend.php:124)
+wp_enqueue_style( 'dashicons' );
+```
+
+## Styling Icons
+
+You can customize icon appearance with CSS:
+
+### Change Icon Color
+
+```css
+/* All menu icons */
+.woocommerce-MyAccount-navigation a i.dashicons {
+    color: #0073aa;
+}
+
+/* Active item icon */
+.woocommerce-MyAccount-navigation li.is-active a i.dashicons {
+    color: #ff6600;
+}
+
+/* Specific item icon */
+.woocommerce-MyAccount-navigation-link--orders a i.dashicons {
+    color: #46b450;
+}
+```
+
+### Adjust Icon Size
+
+```css
+.woocommerce-MyAccount-navigation a i.dashicons {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+}
+```
+
+### Icon Spacing
+
+```css
+.woocommerce-MyAccount-navigation a i.dashicons {
+    margin-right: 8px;
+}
+```
+
+### Icon Animations
+
+```css
+/* Rotate icon on hover */
+.woocommerce-MyAccount-navigation a:hover i.dashicons-admin-settings {
+    transform: rotate(90deg);
+    transition: transform 0.3s ease;
+}
+
+/* Pulse effect */
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.woocommerce-MyAccount-navigation a:hover i.dashicons {
+    animation: pulse 0.5s ease;
+}
+```
+
+## Use Cases by Icon
+
+<AccordionGroup>
+  <Accordion title="Wishlist / Favorites">
+    **Icon:** `dashicons-heart`  
+    **Alternative:** `dashicons-star-filled`
+    
+    Perfect for wishlists, favorites, or saved items.
+  </Accordion>
+  
+  <Accordion title="Support / Help">
+    **Icon:** `dashicons-sos`  
+    **Alternative:** `dashicons-lightbulb`, `dashicons-info`
+    
+    Ideal for help centers, support tickets, or documentation.
+  </Accordion>
+  
+  <Accordion title="Rewards / Loyalty">
+    **Icon:** `dashicons-awards`  
+    **Alternative:** `dashicons-star-filled`, `dashicons-tickets-alt`
+    
+    Great for loyalty programs, points, or achievements.
+  </Accordion>
+  
+  <Accordion title="Settings / Preferences">
+    **Icon:** `dashicons-admin-generic`  
+    **Alternative:** `dashicons-admin-settings`, `dashicons-admin-tools`
+    
+    Use for account settings or preference pages.
+  </Accordion>
+  
+  <Accordion title="Membership Tiers">
+    **Icon:** `dashicons-shield`  
+    **Alternative:** `dashicons-awards`, `dashicons-id`
+    
+    Represent premium, VIP, or membership status.
+  </Accordion>
+  
+  <Accordion title="Notifications">
+    **Icon:** `dashicons-bell`  
+    **Alternative:** `dashicons-megaphone`
+    
+    Show notification centers or announcement pages.
+  </Accordion>
+</AccordionGroup>
+
+## Custom Icon Fonts
+
+While the plugin is optimized for Dashicons, you can use custom icon fonts:
+
+### Font Awesome Example
+
+```php
+// Enqueue Font Awesome
+add_action( 'wp_enqueue_scripts', function() {
+    if ( is_account_page() ) {
+        wp_enqueue_style( 'font-awesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css' );
+    }
+});
+```
+
+Then use Font Awesome classes in the icon field:
+
+```text
+fas fa-shopping-cart
+far fa-heart
+fas fa-user-circle
+```
+
+<Warning>
+  Custom icon fonts require additional CSS to align properly with menu text. Test thoroughly before deploying.
+</Warning>
+
+## Troubleshooting
+
+### Icon Not Displaying
+
+**Possible causes:**
+1. **Missing `dashicons` prefix** — Ensure you use `dashicons dashicons-{name}`
+2. **Dashicons not enqueued** — The plugin auto-enqueues on My Account pages
+3. **Theme CSS conflict** — Check if theme CSS is hiding icons
+
+**Solution:**
+```php
+// Force enqueue Dashicons everywhere (if needed)
+add_action( 'wp_enqueue_scripts', function() {
+    wp_enqueue_style( 'dashicons' );
+});
+```
+
+### Icon Appears as Square/Box
+
+**Cause:** The Dashicons font file isn't loading.
+
+**Solution:** Clear browser cache and check browser console for font loading errors.
+
+### Icon Too Small/Large
+
+**Solution:** Adjust icon size with custom CSS:
+
+```css
+.woocommerce-MyAccount-navigation a i.dashicons {
+    font-size: 18px !important;
+    width: 18px !important;
+    height: 18px !important;
+}
+```
+
+### Icons Misaligned with Text
+
+**Solution:**
+```css
+.woocommerce-MyAccount-navigation a i.dashicons {
+    vertical-align: middle;
+    margin-right: 6px;
+}
+```
+
+## Accessibility Considerations
+
+<Info>
+  Icons are decorative and don't convey information not already present in the text label, so they don't require additional ARIA labels.
+</Info>
+
+If you want to add screen reader support:
+
+```javascript
+// Add aria-hidden to icons
+jQuery('.woocommerce-MyAccount-navigation a i.dashicons').attr('aria-hidden', 'true');
+```
+
+## Best Practices
+
+<Tip>
+  **Consistency:** Use similar icon styles (all filled or all outline) for a cohesive look.
+</Tip>
+
+<Tip>
+  **Relevance:** Choose icons that clearly represent the menu item's purpose (e.g., cart icon for Orders).
+</Tip>
+
+<Tip>
+  **Contrast:** Ensure icon colors have sufficient contrast against the background for accessibility.
+</Tip>
+
+<Warning>
+  **Don't Overdo It:** Not every item needs an icon. Use them strategically to highlight important sections.
+</Warning>
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Menu Builder" icon="bars" href="/features/menu-builder">
+    Learn how to add and organize menu items
+  </Card>
+  <Card title="Badges & Counters" icon="bell" href="/features/badges-counters">
+    Combine icons with badges for enhanced visibility
+  </Card>
+  <Card title="Custom Endpoints" icon="page" href="/features/custom-endpoints">
+    Create custom pages with unique icons
+  </Card>
+  <Card title="External Links" icon="link" href="/features/external-links">
+    Add icons to external link menu items
+  </Card>
+</CardGroup>

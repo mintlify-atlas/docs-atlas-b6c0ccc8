@@ -1,0 +1,574 @@
+---
+title: 'Menu Separators'
+description: 'Organize your My Account menu with visual separator lines for logical grouping'
+---
+
+Menu separators are non-clickable divider lines that help organize and visually group related menu items for better navigation hierarchy.
+
+## Overview
+
+Separators appear as horizontal lines in the My Account navigation menu. They're perfect for:
+
+- Grouping related menu items
+- Creating visual hierarchy
+- Improving menu readability
+- Separating different sections (e.g., Account vs Shop sections)
+
+<Info>
+  Separators are rendered as disabled menu items with custom CSS styling to appear as horizontal lines.
+</Info>
+
+## Adding Separators
+
+<Steps>
+  <Step title="Open Menu Builder">
+    Navigate to **WooCommerce → Settings → My Account Menu**.
+  </Step>
+  
+  <Step title="Click Add Separator">
+    Click the **Add Separator** button in the toolbar (next to "Add Item").
+  </Step>
+  
+  <Step title="Position Separator">
+    The separator appears at the bottom of your menu list. Drag it to the desired position.
+  </Step>
+  
+  <Step title="Save">
+    Click **Save Menu** to apply changes.
+  </Step>
+</Steps>
+
+<Note>
+  Separators are automatically created with all necessary configuration—no modal or settings required.
+</Note>
+
+## How Separators Work
+
+### Separator Item Structure
+
+Separators are menu items with `type: 'separator'`:
+
+```php
+// Separator item structure (class-wmab-settings.php:153-170)
+private static function make_item( $id, $title, $type, $endpoint, $icon, $is_default = false ) {
+    return [
+        'id'          => $id,
+        'title'       => $title,
+        'type'        => $type,       // endpoint | link | separator
+        'endpoint'    => $endpoint,
+        'url'         => '',
+        'content'     => '',
+        'icon'        => $icon,
+        'roles'       => [],
+        'target'      => '_self',
+        'enabled'     => true,
+        'is_default'  => $is_default,
+        'css_class'   => '',
+        'badge'       => '',
+        'badge_count' => '',
+        'description' => '',
+    ];
+}
+```
+
+When type is `separator`, most fields are ignored (title, icon, endpoint, etc.).
+
+### Frontend Key Generation
+
+Separators get a unique key prefixed with `wmab-sep--`:
+
+```php
+// Separator key generation (class-wmab-frontend.php:59-61)
+case 'separator':
+    $key = 'wmab-sep--' . $item['id'];
+    break;
+```
+
+This ensures separators don't conflict with real endpoint slugs.
+
+### URL Override
+
+Separators point to `#` (nowhere) to prevent navigation:
+
+```php
+// Separator URL override (class-wmab-frontend.php:107-110)
+if ( 0 === strpos( $endpoint, 'wmab-sep--' ) ) {
+    return '#';
+}
+```
+
+### Dynamic CSS Injection
+
+Separators are styled via dynamic inline CSS:
+
+```php
+// Separator CSS generation (class-wmab-frontend.php:189-203)
+private static function build_dynamic_css() {
+    $keyed = self::get_items_with_keys();
+    $css   = '';
+
+    foreach ( $keyed as $key => $item ) {
+        if ( 'separator' === $item['type'] ) {
+            $safe_key = sanitize_html_class( $key );
+            $css .= '.woocommerce-MyAccount-navigation-link--' . $safe_key . '{';
+            $css .= 'pointer-events:none;';
+            $css .= 'border-bottom:1px solid #e5e7eb;';
+            $css .= 'margin:4px 0;';
+            $css .= 'padding:0 !important;';
+            $css .= 'height:1px;';
+            $css .= 'overflow:hidden;';
+            $css .= '}';
+            $css .= '.woocommerce-MyAccount-navigation-link--' . $safe_key . ' a{display:none !important;}';
+        }
+    }
+
+    return $css;
+}
+```
+
+**CSS applied to separators:**
+- `pointer-events: none` — Disables clicking
+- `border-bottom: 1px solid #e5e7eb` — Creates the line
+- `margin: 4px 0` — Adds vertical spacing
+- `padding: 0` — Removes default padding
+- `height: 1px` — Makes it a thin line
+- `overflow: hidden` — Hides any content
+- `a { display: none }` — Hides the anchor tag completely
+
+<Note>
+  Dynamic CSS is added via `wp_add_inline_style()` to avoid inline `<style>` tags, ensuring compatibility with CSP policies.
+</Note>
+
+## Builder Representation
+
+Separators appear differently in the admin builder:
+
+```javascript
+// Separator HTML in builder (admin.js:80-88)
+function separatorHtml(i, item) {
+    return '<li data-index="' + i + '" class="wmab-separator-item">' +
+        '<span class="wmab-item-drag dashicons dashicons-menu"></span>' +
+        '<div class="wmab-sep-line"></div>' +
+        '<span class="wmab-sep-label">— Separator —</span>' +
+        '<div class="wmab-item-actions">' +
+            '<button type="button" class="wmab-btn-delete" title="Delete"><span class="dashicons dashicons-trash"></span></button>' +
+        '</div></li>';
+}
+```
+
+**Visual elements:**
+- **Drag handle** — For repositioning
+- **Separator line** — Visual representation
+- **Label** — "— Separator —" text
+- **Delete button** — Remove the separator
+
+<Info>
+  Separators cannot be edited—only positioned and deleted. To "edit" a separator, delete it and add a new one.
+</Info>
+
+## Preview Rendering
+
+In the live preview panel, separators render as horizontal rules:
+
+```javascript
+// Separator preview (admin.js:94-97)
+if (item.type === 'separator') {
+    html += '<li class="wmab-pv-separator"><hr></li>';
+    return;
+}
+```
+
+## Use Cases
+
+<AccordionGroup>
+  <Accordion title="Account vs Shop Sections">
+    **Example Menu:**
+    
+    1. Dashboard
+    2. Orders
+    3. Downloads
+    4. **—— Separator ——**
+    5. Edit Address
+    6. Edit Account
+    7. **—— Separator ——**
+    8. Logout
+    
+    This groups shopping-related items (Orders, Downloads) separately from account management (Address, Account Details).
+  </Accordion>
+  
+  <Accordion title="Grouping Custom Features">
+    **Example Menu:**
+    
+    1. Dashboard
+    2. Orders
+    3. **—— Separator ——**
+    4. Wishlist (custom)
+    5. Favorites (custom)
+    6. **—— Separator ——**
+    7. Support Tickets (custom)
+    8. Help Center (link)
+    9. **—— Separator ——**
+    10. Logout
+    
+    Separators organize custom endpoints and external links into logical groups.
+  </Accordion>
+  
+  <Accordion title="Membership Tiers">
+    **Example Menu:**
+    
+    1. Dashboard
+    2. Orders
+    3. **—— Separator ——**
+    4. Premium Perks (VIP only)
+    5. Exclusive Deals (VIP only)
+    6. **—— Separator ——**
+    7. Account Settings
+    8. Logout
+    
+    Separators visually distinguish premium features from standard options.
+  </Accordion>
+  
+  <Accordion title="Action vs Information Sections">
+    **Example Menu:**
+    
+    1. Dashboard
+    2. Orders (action)
+    3. Downloads (action)
+    4. **—— Separator ——**
+    5. Order History (information)
+    6. Purchase Reports (information)
+    7. **—— Separator ——**
+    8. Logout
+    
+    Separate actionable items from informational/reporting items.
+  </Accordion>
+</AccordionGroup>
+
+## Positioning Separators
+
+### Drag and Drop
+
+Separators can be repositioned just like regular menu items:
+
+1. Hover over the separator in the builder
+2. Click and hold the drag handle (☰)
+3. Drag to the desired position
+4. Release to drop
+5. Click **Save Menu**
+
+<Tip>
+  Place separators **between** groups of items, not at the very top or bottom of the menu (where they serve no purpose).
+</Tip>
+
+### Strategic Placement
+
+**Best practices:**
+
+- **After every 3-5 items** — Prevents long, monotonous lists
+- **Before major sections** — Signals a shift in category
+- **Not consecutively** — Avoid multiple separators in a row (creates excessive whitespace)
+- **Not at edges** — Don't place as first or last item
+
+## Multiple Separators
+
+You can add as many separators as needed:
+
+```text
+✓ Dashboard
+✓ Orders
+✓ Downloads
+— Separator
+✓ Addresses
+✓ Account Details
+— Separator
+✓ Wishlist
+✓ Support
+— Separator
+✓ Logout
+```
+
+Each separator gets a unique ID and CSS class.
+
+## Role-Based Separators
+
+Separators **do not support role-based visibility**. They're always visible to all users.
+
+If you need conditional separators:
+
+```php
+// Custom filter to conditionally hide separators
+add_filter( 'wmab_menu_items', function( $items ) {
+    // Remove separator if user doesn't have VIP role
+    $user = wp_get_current_user();
+    if ( ! in_array( 'vip_member', $user->roles ) ) {
+        $items = array_filter( $items, function( $item ) {
+            return ! ( $item['type'] === 'separator' && $item['id'] === 'vip-separator' );
+        });
+    }
+    return $items;
+});
+```
+
+<Note>
+  In most cases, role-based separators aren't necessary. The separator only appears if there are visible items on both sides of it.
+</Note>
+
+## Styling Separators
+
+### Default Separator Style
+
+```css
+/* Default separator line (injected dynamically) */
+.woocommerce-MyAccount-navigation-link--wmab-sep--{id} {
+    pointer-events: none;
+    border-bottom: 1px solid #e5e7eb;
+    margin: 4px 0;
+    padding: 0 !important;
+    height: 1px;
+    overflow: hidden;
+}
+
+.woocommerce-MyAccount-navigation-link--wmab-sep--{id} a {
+    display: none !important;
+}
+```
+
+### Custom Separator Styles
+
+Override with your own CSS:
+
+```css
+/* Thicker separator line */
+.woocommerce-MyAccount-navigation li[class*="wmab-sep--"] {
+    border-bottom: 2px solid #333 !important;
+    margin: 8px 0 !important;
+}
+
+/* Dashed separator */
+.woocommerce-MyAccount-navigation li[class*="wmab-sep--"] {
+    border-bottom: 1px dashed #ccc !important;
+}
+
+/* Gradient separator */
+.woocommerce-MyAccount-navigation li[class*="wmab-sep--"] {
+    border-bottom: none !important;
+    background: linear-gradient(to right, transparent, #ccc, transparent) !important;
+    height: 2px !important;
+}
+
+/* Dotted separator */
+.woocommerce-MyAccount-navigation li[class*="wmab-sep--"] {
+    border-bottom: 1px dotted #999 !important;
+}
+```
+
+### Adding Icons to Separators
+
+Use CSS pseudo-elements to add decorative icons:
+
+```css
+/* Add icon in center of separator */
+.woocommerce-MyAccount-navigation li[class*="wmab-sep--"] {
+    position: relative;
+    border-bottom: 1px solid #e5e7eb;
+    height: 1px;
+    margin: 12px 0;
+}
+
+.woocommerce-MyAccount-navigation li[class*="wmab-sep--"]::after {
+    content: "◆";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    padding: 0 8px;
+    color: #ccc;
+    font-size: 10px;
+}
+```
+
+## Theme Compatibility
+
+Some themes may style menu items in ways that conflict with separators:
+
+### Override Theme Styles
+
+```css
+/* Force separator to display correctly in all themes */
+.woocommerce-MyAccount-navigation li[class*="wmab-sep--"] {
+    list-style: none !important;
+    background: transparent !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+    border-bottom: 1px solid #e5e7eb !important;
+    padding: 0 !important;
+    margin: 8px 0 !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+}
+
+.woocommerce-MyAccount-navigation li[class*="wmab-sep--"] a {
+    display: none !important;
+}
+
+.woocommerce-MyAccount-navigation li[class*="wmab-sep--"]::before,
+.woocommerce-MyAccount-navigation li[class*="wmab-sep--"]::after {
+    content: none !important;
+}
+```
+
+## Troubleshooting
+
+### Separator is Clickable
+
+**Cause:** CSS `pointer-events: none` not being applied.
+
+**Solution:**
+
+```css
+.woocommerce-MyAccount-navigation li[class*="wmab-sep--"] {
+    pointer-events: none !important;
+}
+
+.woocommerce-MyAccount-navigation li[class*="wmab-sep--"] a {
+    pointer-events: none !important;
+    display: none !important;
+}
+```
+
+### Separator Has Height
+
+**Cause:** Theme padding or line-height.
+
+**Solution:**
+
+```css
+.woocommerce-MyAccount-navigation li[class*="wmab-sep--"] {
+    height: 1px !important;
+    line-height: 1px !important;
+    font-size: 0 !important;
+    padding: 0 !important;
+}
+```
+
+### Separator Not Showing
+
+**Check:**
+1. Separator was saved (click **Save Menu**)
+2. There are visible items above and below the separator
+3. Browser cache cleared
+4. CSS is loading correctly
+
+### Multiple Separators Merge Together
+
+**Cause:** Insufficient margin between separators.
+
+**Solution:**
+
+```css
+.woocommerce-MyAccount-navigation li[class*="wmab-sep--"] {
+    margin: 12px 0 !important;  /* Increase margin */
+}
+```
+
+## Best Practices
+
+<Tip>
+  **Use Sparingly:** 2-3 separators max for most menus. Too many create excessive fragmentation.
+</Tip>
+
+<Tip>
+  **Logical Grouping:** Place separators between conceptually different groups (e.g., shopping vs account management).
+</Tip>
+
+<Tip>
+  **Consistent Spacing:** Ensure separators have consistent margin/padding for a polished look.
+</Tip>
+
+<Warning>
+  **Avoid at Edges:** Don't place separators as the first or last item—they serve no purpose there.
+</Warning>
+
+<Warning>
+  **Never Consecutive:** Multiple separators in a row create confusing whitespace. Always have items between separators.
+</Warning>
+
+## Accessibility
+
+Separators are purely decorative and hidden from screen readers:
+
+```css
+/* Add ARIA role for screen readers */
+.woocommerce-MyAccount-navigation li[class*="wmab-sep--"] {
+    role: separator;
+    aria-hidden: true;
+}
+```
+
+Implement via JavaScript:
+
+```javascript
+jQuery(document).ready(function($) {
+    $('.woocommerce-MyAccount-navigation li[class*="wmab-sep--"]')
+        .attr('role', 'separator')
+        .attr('aria-hidden', 'true');
+});
+```
+
+## Code Reference
+
+### Creating Separators Programmatically
+
+```php
+// Add separator via code
+add_filter( 'wmab_menu_items', function( $items ) {
+    // Insert separator after "Orders" item
+    $new_items = [];
+    foreach ( $items as $item ) {
+        $new_items[] = $item;
+        if ( $item['endpoint'] === 'orders' ) {
+            $new_items[] = [
+                'id'       => 'custom-separator-1',
+                'type'     => 'separator',
+                'enabled'  => true,
+                'title'    => '',
+                'endpoint' => '',
+                'icon'     => '',
+                'roles'    => [],
+            ];
+        }
+    }
+    return $new_items;
+});
+```
+
+### Remove All Separators
+
+```php
+// Filter out all separators
+add_filter( 'wmab_menu_items', function( $items ) {
+    return array_filter( $items, function( $item ) {
+        return $item['type'] !== 'separator';
+    });
+});
+```
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Menu Builder" icon="bars" href="/features/menu-builder">
+    Learn how to organize menu items with drag & drop
+  </Card>
+  <Card title="Custom Endpoints" icon="page" href="/features/custom-endpoints">
+    Create custom pages to group with separators
+  </Card>
+  <Card title="Role-Based Visibility" icon="users" href="/features/role-based-visibility">
+    Show different menu sections to different user roles
+  </Card>
+  <Card title="Icons" icon="star" href="/features/icons">
+    Add icons to items for visual grouping
+  </Card>
+</CardGroup>

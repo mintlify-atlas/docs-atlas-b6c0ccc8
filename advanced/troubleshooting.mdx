@@ -1,0 +1,466 @@
+---
+title: Troubleshooting
+description: Common issues and solutions for My Account Menu Builder
+---
+
+This guide covers the most common issues you may encounter when using My Account Menu Builder for WooCommerce, along with step-by-step solutions.
+
+## Plugin Settings Not Showing
+
+### Issue
+Can't find the plugin settings in the WordPress admin.
+
+### Solution
+
+<Steps>
+  <Step title="Check Location">
+    Settings are NOT in the main WordPress Settings menu. Navigate to **WooCommerce → Settings** and look for the **My Account Menu** tab at the top.
+  </Step>
+  
+  <Step title="Verify WooCommerce is Active">
+    The plugin requires WooCommerce. If WooCommerce is not installed/activated, you'll see an admin notice and the plugin won't load.
+  </Step>
+  
+  <Step title="Check White-Label Settings">
+    If white-label mode is enabled, the tab label may have been renamed. Look for a custom tab name instead of "My Account Menu".
+  </Step>
+</Steps>
+
+<Info>
+The Settings link also appears on the **Plugins** page next to the plugin name. Click it to go directly to the settings page.
+</Info>
+
+## Custom Endpoint Shows 404 Page
+
+### Issue
+After creating a new custom endpoint, visiting the URL (e.g., `/my-account/custom-page/`) shows a 404 error.
+
+### Solution
+
+<Steps>
+  <Step title="Flush Permalinks">
+    Go to **Settings → Permalinks** and click **Save Changes** (you don't need to change anything, just click Save).
+  </Step>
+  
+  <Step title="Check Endpoint Slug">
+    Ensure the endpoint slug is valid:
+    - Lowercase only
+    - Use hyphens instead of spaces
+    - No special characters
+    - Must not conflict with existing WordPress/WooCommerce endpoints
+  </Step>
+  
+  <Step title="Verify Menu is Saved">
+    Click **Save Menu** in the builder to ensure your changes are persisted
+  </Step>
+</Steps>
+
+<Note>
+The plugin automatically sets a `wmab_flush_rewrite` flag when you save the menu, which triggers a permalink flush on the next page load. However, some hosting configurations may require a manual flush via **Settings → Permalinks**.
+</Note>
+
+**Technical details:**
+
+The plugin registers custom endpoints via the `init` hook. If permalinks aren't flushed, WordPress doesn't know about the new rewrite rules.
+
+## Menu Items Not Showing on Frontend
+
+### Issue
+Menu items appear in the admin builder but don't show on the actual My Account page.
+
+### Possible Causes and Solutions
+
+<Accordion title="Item is Disabled">
+  Check if the **Enabled** toggle is turned on for the menu item in the editor modal.
+</Accordion>
+
+<Accordion title="Role Visibility Restriction">
+  If you set specific roles in the "Visible to Roles" field, only users with those roles can see the item. Leave all roles unchecked to make it visible to everyone.
+</Accordion>
+
+<Accordion title="Theme Conflict">
+  Some themes override WooCommerce templates. Check if your theme has a custom `my-account/navigation.php` template that isn't using the standard WooCommerce filter hooks.
+  
+  **Solution:** Contact your theme developer or use a plugin like "WooCommerce Template Overrides" to identify and update conflicting templates.
+</Accordion>
+
+<Accordion title="Cache Issue">
+  If you're using a caching plugin or server-level cache, the My Account page may be serving a cached version.
+  
+  **Solution:** Clear all caches:
+  - Plugin cache (WP Rocket, W3 Total Cache, etc.)
+  - Server cache (Varnish, Redis, etc.)
+  - Browser cache (Ctrl+Shift+R or Cmd+Shift+R)
+</Accordion>
+
+## White-Label Settings Not Applying
+
+### Issue
+Changed white-label settings but still see the default plugin name.
+
+### Solution
+
+<Steps>
+  <Step title="Enable White Label Mode">
+    Make sure the **Enable White Label** toggle is turned ON in the White Label tab
+  </Step>
+  
+  <Step title="Save Settings">
+    Click the **Save Settings** button at the bottom of the White Label tab
+  </Step>
+  
+  <Step title="Reload the Page">
+    After saving, you MUST reload the page for changes to take effect. The success message says: "Settings saved! Reload to see changes."
+  </Step>
+</Steps>
+
+<Warning>
+If you enabled "Hide from Plugins List" and can't find the plugin anymore:
+
+1. Access settings directly: **WooCommerce → Settings → My Account Menu** (or your custom tab name)
+2. Or run this in **Tools → Database** or a code snippet plugin:
+   ```php
+   update_option('wmab_white_label', ['enabled' => false]);
+   ```
+</Warning>
+
+## Import Fails with "Invalid Import Data"
+
+### Issue
+Importing a JSON file shows an error: "Invalid import data."
+
+### Solution
+
+<Steps>
+  <Step title="Validate JSON Format">
+    Use a JSON validator (like [jsonlint.com](https://jsonlint.com)) to ensure the file is valid JSON
+  </Step>
+  
+  <Step title="Check Required Fields">
+    The JSON must contain an `items` array at the root level:
+    ```json
+    {
+      "plugin": "my-account-menu-builder-for-woocommerce",
+      "items": [ ... ]
+    }
+    ```
+  </Step>
+  
+  <Step title="Re-Export from Source Site">
+    If the file appears corrupted, re-export from the original site
+  </Step>
+</Steps>
+
+**What the plugin checks during import (class-wmab-settings.php:478):**
+
+```php
+$json = isset( $_POST['json'] ) ? json_decode( wp_unslash( $_POST['json'] ), true ) : null;
+if ( ! $json || ! isset( $json['items'] ) || ! is_array( $json['items'] ) ) {
+    wp_send_json_error( 'Invalid JSON' );
+}
+```
+
+## Icons Not Displaying
+
+### Issue
+Menu items show no icon or a broken icon placeholder.
+
+### Solution
+
+<Steps>
+  <Step title="Use Correct Icon Classes">
+    The plugin uses **WordPress Dashicons**. Ensure you're using valid Dashicon classes:
+    ```
+    dashicons dashicons-star-filled
+    dashicons dashicons-cart
+    dashicons dashicons-admin-users
+    ```
+  </Step>
+  
+  <Step title="Use the Icon Picker">
+    Instead of typing icon classes manually, use the visual icon picker in the item editor modal
+  </Step>
+  
+  <Step title="Check for Theme Conflicts">
+    Some themes disable Dashicons on the frontend. Add this to your theme's `functions.php`:
+    ```php
+    add_action( 'wp_enqueue_scripts', function() {
+        wp_enqueue_style( 'dashicons' );
+    });
+    ```
+  </Step>
+</Steps>
+
+<Info>
+As of version 1.3.0, the plugin uses only Dashicons (Font Awesome was removed). If you're upgrading from an older version that used Font Awesome, you'll need to update your icon classes.
+</Info>
+
+## Role Visibility Not Working
+
+### Issue
+Set role restrictions but users with those roles still can't see the menu item (or users without those roles can see it).
+
+### Solution
+
+<Steps>
+  <Step title="Understand Empty Roles Behavior">
+    If NO roles are checked, the item is visible to ALL logged-in users. To restrict visibility, you must check at least one role.
+  </Step>
+  
+  <Step title="Check User Role">
+    Verify the test user actually has the role you selected. Use a plugin like "User Switching" to log in as different role users.
+  </Step>
+  
+  <Step title="Clear Cache">
+    User role checks happen server-side, but caching plugins may serve stale HTML. Clear all caches.
+  </Step>
+  
+  <Step title="Check for Custom Roles">
+    If using a membership or custom role plugin, ensure those roles are properly registered in WordPress and appear in the role picker.
+  </Step>
+</Steps>
+
+## Dynamic Badge Counters Not Showing
+
+### Issue
+Set badge counter to "Order Count" or "Download Count" but the number doesn't appear.
+
+### Possible Causes
+
+<Accordion title="User Has Zero Orders/Downloads">
+  The counter only shows if the value is greater than zero. Test with a user who has placed orders or has downloadable products.
+</Accordion>
+
+<Accordion title="HPOS (High-Performance Order Storage) Issue">
+  The plugin is compatible with HPOS, but ensure your WooCommerce is up-to-date and HPOS is properly configured in **WooCommerce → Settings → Advanced → Features**.
+</Accordion>
+
+## "New Tab" Link Target Not Working
+
+### Issue
+Set a link to open in a new tab (`target="_blank"`), but it opens in the same tab.
+
+### Solution
+
+<Steps>
+  <Step title="Save the Menu Item">
+    Ensure you clicked **Save Item** in the modal after setting the target to "New Tab"
+  </Step>
+  
+  <Step title="Save the Menu">
+    Click **Save Menu** in the main builder to persist changes to the database
+  </Step>
+  
+  <Step title="Clear Browser Cache">
+    Hard refresh the My Account page (Ctrl+Shift+R or Cmd+Shift+R)
+  </Step>
+</Steps>
+
+## Plugin Not Appearing in Plugins List
+
+### Issue
+Can't find the plugin in **Plugins → Installed Plugins**.
+
+### Cause
+White-label mode is enabled with **Hide from Plugins List** turned on.
+
+### Solution
+
+<Steps>
+  <Step title="Access Settings Directly">
+    Go to **WooCommerce → Settings** and look for the My Account Menu tab (or your custom white-label tab name)
+  </Step>
+  
+  <Step title="Disable Hide Plugin">
+    In the **White Label** tab, turn off **Hide from Plugins List** and save
+  </Step>
+  
+  <Step title="Alternative: Database Reset">
+    If you can't access the settings, run this in phpMyAdmin or a code snippet plugin:
+    ```sql
+    UPDATE wp_options 
+    SET option_value = '{"enabled":false}' 
+    WHERE option_name = 'wmab_white_label';
+    ```
+  </Step>
+</Steps>
+
+## Endpoint Content Not Rendering
+
+### Issue
+Added HTML or shortcodes to the "Endpoint Content" field, but they don't show on the frontend.
+
+### Solution
+
+<Steps>
+  <Step title="Verify Content Type">
+    Endpoint content only works for items with type **Endpoint**, not **Link** items
+  </Step>
+  
+  <Step title="Check Shortcode Compatibility">
+    Ensure the shortcode is from an active plugin. Test the shortcode in a regular page/post first.
+  </Step>
+  
+  <Step title="Allowed HTML Tags">
+    Content is filtered through `wp_kses_post()`, which only allows safe HTML tags. JavaScript and certain tags are stripped for security.
+  </Step>
+  
+  <Step title="Visit the Correct URL">
+    Make sure you're visiting `/my-account/your-endpoint-slug/` and not `/my-account/` (the main page)
+  </Step>
+</Steps>
+
+## WooCommerce Incompatibility Warning
+
+### Issue
+After updating WooCommerce, you see a warning that the plugin may not be compatible.
+
+### Solution
+
+<Steps>
+  <Step title="Update the Plugin">
+    Always use the latest version of My Account Menu Builder. The plugin explicitly declares HPOS and Cart/Checkout Blocks compatibility.
+  </Step>
+  
+  <Step title="Check Compatibility Declarations">
+    The plugin declares compatibility in the main plugin file (my-account-menu-builder-for-woocommerce.php:42):
+    ```php
+    add_action( 'before_woocommerce_init', function () {
+        if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) ) {
+            \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility(
+                'custom_order_tables', __FILE__, true
+            );
+            \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility(
+                'cart_checkout_blocks', __FILE__, true
+            );
+        }
+    } );
+    ```
+  </Step>
+</Steps>
+
+<Note>
+The plugin only modifies the My Account navigation menu. It does NOT interact with orders, cart, checkout, or product data, so it's inherently compatible with HPOS and Cart/Checkout Blocks.
+</Note>
+
+## Multisite Issues
+
+### Issue
+Plugin not working correctly on WordPress Multisite.
+
+### Solution
+
+<Steps>
+  <Step title="Activate Per-Site">
+    Activate the plugin on each subsite individually (not network-wide) for best results
+  </Step>
+  
+  <Step title="Check WooCommerce Per-Site">
+    Ensure WooCommerce is active on the specific subsite where you want to use the menu builder
+  </Step>
+  
+  <Step title="Separate Configurations">
+    Each subsite maintains its own menu configuration. Export/import to replicate across sites.
+  </Step>
+</Steps>
+
+## Performance Issues
+
+### Issue
+The My Account page or admin builder loads slowly.
+
+### Possible Causes and Solutions
+
+<Accordion title="Too Many Menu Items">
+  The plugin is designed to handle 20-30 menu items efficiently. If you have significantly more, consider if all are necessary.
+</Accordion>
+
+<Accordion title="Heavy Shortcodes in Endpoint Content">
+  If your endpoint content includes complex shortcodes (e.g., query loops, API calls), they may slow down page load. Consider:
+  - Caching shortcode output
+  - Using lazy loading for content
+  - Simplifying shortcode logic
+</Accordion>
+
+<Accordion title="Theme or Plugin Conflicts">
+  Disable other plugins temporarily to identify conflicts. Use the Health Check & Troubleshooting plugin to test in a clean environment.
+</Accordion>
+
+## Getting Further Help
+
+### Check the FAQ
+
+Many common questions are answered in the readme.txt FAQ section. See the [GitHub repository](https://github.com/nurkamol/my-account-menu-builder-for-woocommerce).
+
+### Enable Debugging
+
+To troubleshoot PHP errors, enable WordPress debugging:
+
+```php wp-config.php
+define( 'WP_DEBUG', true );
+define( 'WP_DEBUG_LOG', true );
+define( 'WP_DEBUG_DISPLAY', false );
+```
+
+Check `/wp-content/debug.log` for error messages.
+
+### Report a Bug
+
+<Steps>
+  <Step title="Check GitHub Issues">
+    Search existing issues: [GitHub Issues](https://github.com/nurkamol/my-account-menu-builder-for-woocommerce/issues)
+  </Step>
+  
+  <Step title="Gather Information">
+    Before reporting, collect:
+    - Plugin version
+    - WooCommerce version
+    - WordPress version
+    - PHP version
+    - Active theme
+    - Other active plugins
+    - Error messages or screenshots
+  </Step>
+  
+  <Step title="Submit Detailed Report">
+    Open a new issue with all relevant details and steps to reproduce
+  </Step>
+</Steps>
+
+### Contact Support
+
+For premium support or custom development:
+
+- **Email:** nurkamol@gmail.com
+- **Website:** [nurkamol.com](https://nurkamol.com)
+
+## Best Practices to Avoid Issues
+
+<Steps>
+  <Step title="Keep Everything Updated">
+    Always use the latest versions of WordPress, WooCommerce, and this plugin
+  </Step>
+  
+  <Step title="Test on Staging First">
+    Never make major menu changes directly on production. Use a staging site.
+  </Step>
+  
+  <Step title="Export Before Major Changes">
+    Always export your current configuration before making significant modifications
+  </Step>
+  
+  <Step title="Use a Child Theme">
+    If you need to customize templates, use a child theme to prevent update overwrites
+  </Step>
+  
+  <Step title="Document Custom Setup">
+    Keep notes on any custom shortcodes, third-party integrations, or special configurations
+  </Step>
+</Steps>
+
+## Related Resources
+
+- [White-Label Mode](/advanced/white-label) - Configure white-label branding
+- [Export/Import](/advanced/export-import) - Migrate configurations between sites
+- [API Reference](/api/hooks-filters) - Advanced customization and hooks
+- [GitHub Repository](https://github.com/nurkamol/my-account-menu-builder-for-woocommerce) - Source code and issue tracker

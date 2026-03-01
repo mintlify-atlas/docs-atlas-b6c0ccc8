@@ -1,0 +1,663 @@
+---
+title: PHP Class Reference
+description: Detailed documentation of PHP classes, methods, and properties in My Account Menu Builder
+---
+
+## Overview
+
+This page documents the public PHP classes and methods available in My Account Menu Builder. All classes use singleton patterns and are accessible after the `plugins_loaded` hook.
+
+## WMAB_Plugin
+
+**File:** `my-account-menu-builder-for-woocommerce.php`  
+**Namespace:** Global
+
+Main plugin class that handles initialization, activation, and deactivation.
+
+### WMAB_Plugin::instance()
+
+Retrieves the singleton instance of the main plugin class.
+
+<ParamField path="none" type="void">
+  This method takes no parameters
+</ParamField>
+
+<ResponseField name="return" type="WMAB_Plugin">
+  The singleton instance of the main plugin class
+</ResponseField>
+
+#### Example
+
+```php
+$plugin = WMAB_Plugin::instance();
+```
+
+---
+
+### WMAB_Plugin::init()
+
+Initializes the plugin by loading required files and instantiating component classes.
+
+**Hook:** `plugins_loaded` (priority 10)
+
+<ParamField path="none" type="void">
+  This method takes no parameters
+</ParamField>
+
+<ResponseField name="return" type="void">
+  Returns nothing. Checks for WooCommerce dependency and displays admin notice if missing.
+</ResponseField>
+
+#### What It Does
+
+1. Checks if WooCommerce is active
+2. Requires all class files from `includes/` directory
+3. Instantiates `WMAB_Settings`, `WMAB_Frontend`, and `WMAB_Endpoints`
+4. Adds plugin action links filter
+5. Applies white-label plugin hiding if enabled
+
+---
+
+## WMAB_Settings
+
+**File:** `includes/class-wmab-settings.php`  
+**Namespace:** Global
+
+Handles admin interface, menu configuration storage, and white-label settings.
+
+### WMAB_Settings::instance()
+
+Retrieves the singleton instance.
+
+<ResponseField name="return" type="WMAB_Settings">
+  The singleton instance of the settings class
+</ResponseField>
+
+---
+
+### WMAB_Settings::get_menu_items()
+
+Retrieves all saved menu items from the database, or returns default WooCommerce items if none are saved.
+
+<ParamField path="none" type="void">
+  This method takes no parameters
+</ParamField>
+
+<ResponseField name="return" type="array">
+  Array of menu item arrays. Each item contains all properties defined in the menu item structure.
+</ResponseField>
+
+#### Return Structure
+
+Each menu item in the returned array has this structure:
+
+```php
+[
+    'id'          => string,  // Unique identifier
+    'title'       => string,  // Display title
+    'type'        => string,  // 'endpoint' | 'link' | 'separator'
+    'endpoint'    => string,  // Endpoint slug
+    'url'         => string,  // External URL (for link type)
+    'content'     => string,  // HTML/shortcode content
+    'icon'        => string,  // Icon CSS class
+    'roles'       => array,   // Role slugs (empty = all)
+    'target'      => string,  // '_self' | '_blank'
+    'enabled'     => bool,    // Whether item is active
+    'is_default'  => bool,    // Whether this is a WC default
+    'css_class'   => string,  // Additional CSS classes
+    'badge'       => string,  // Static badge text
+    'badge_count' => string,  // 'orders' | 'downloads' | ''
+    'description' => string,  // Subtitle text
+]
+```
+
+#### Example: Get All Active Endpoints
+
+```php
+$items = WMAB_Settings::get_menu_items();
+$endpoints = array_filter($items, function($item) {
+    return $item['type'] === 'endpoint' && $item['enabled'];
+});
+
+foreach ($endpoints as $endpoint) {
+    echo sprintf(
+        'Endpoint: %s (/my-account/%s/)',
+        $endpoint['title'],
+        $endpoint['endpoint']
+    );
+}
+```
+
+#### Example: Get Menu Items for Specific Role
+
+```php
+$items = WMAB_Settings::get_menu_items();
+$wholesale_items = array_filter($items, function($item) {
+    return empty($item['roles']) || in_array('wholesale_customer', $item['roles']);
+});
+```
+
+---
+
+### WMAB_Settings::get_white_label()
+
+Retrieves white-label configuration settings.
+
+<ParamField path="none" type="void">
+  This method takes no parameters
+</ParamField>
+
+<ResponseField name="return" type="array">
+  Associative array of white-label settings with default values for any missing keys
+</ResponseField>
+
+#### Return Structure
+
+```php
+[
+    'enabled'     => bool,    // Whether white-label is enabled
+    'plugin_name' => string,  // Custom plugin name
+    'author_name' => string,  // Custom author name
+    'author_url'  => string,  // Custom author URL
+    'menu_title'  => string,  // Settings tab label
+    'hide_plugin' => bool,    // Hide from Plugins page
+]
+```
+
+#### Example: Check if White-Label is Active
+
+```php
+$wl = WMAB_Settings::get_white_label();
+
+if ($wl['enabled']) {
+    echo 'Plugin is rebranded as: ' . esc_html($wl['plugin_name']);
+    
+    if ($wl['hide_plugin']) {
+        echo 'Plugin is hidden from the Plugins page.';
+    }
+}
+```
+
+---
+
+### WMAB_Settings::get_all_roles()
+
+Retrieves all WordPress user roles with their display names.
+
+<ParamField path="none" type="void">
+  This method takes no parameters
+</ParamField>
+
+<ResponseField name="return" type="array">
+  Array of role objects, each containing 'slug' and 'name' keys
+</ResponseField>
+
+#### Return Structure
+
+```php
+[
+    ['slug' => 'administrator', 'name' => 'Administrator'],
+    ['slug' => 'customer',      'name' => 'Customer'],
+    ['slug' => 'subscriber',    'name' => 'Subscriber'],
+    // ... etc
+]
+```
+
+#### Example: Build Role Selector
+
+```php
+$roles = WMAB_Settings::get_all_roles();
+
+echo '<select name="user_role">';
+foreach ($roles as $role) {
+    echo sprintf(
+        '<option value="%s">%s</option>',
+        esc_attr($role['slug']),
+        esc_html($role['name'])
+    );
+}
+echo '</select>';
+```
+
+---
+
+### WMAB_Settings::get_default_woo_items()
+
+Returns the default WooCommerce My Account menu items.
+
+<ParamField path="none" type="void">
+  This method takes no parameters
+</ParamField>
+
+<ResponseField name="return" type="array">
+  Array of default menu items (Dashboard, Orders, Downloads, Addresses, Account Details, Logout)
+</ResponseField>
+
+#### Example: Reset to Defaults
+
+```php
+$defaults = WMAB_Settings::get_default_woo_items();
+update_option('wmab_menu_items', $defaults);
+update_option('wmab_flush_rewrite', true);
+```
+
+---
+
+### WMAB_Settings::sanitize_item()
+
+Sanitizes a menu item array before saving to the database.
+
+<ParamField path="$item" type="array" required>
+  Raw menu item data (potentially from user input)
+</ParamField>
+
+<ResponseField name="return" type="array">
+  Sanitized menu item with all required fields validated and safe for database storage
+</ResponseField>
+
+#### Example: Programmatically Add Menu Item
+
+```php
+$raw_item = [
+    'id'       => 'support-tickets',
+    'title'    => 'Support Tickets',
+    'type'     => 'endpoint',
+    'endpoint' => 'tickets',
+    'content'  => '[support_ticket_list]',
+    'icon'     => 'dashicons-sos',
+    'enabled'  => true,
+];
+
+$sanitized = WMAB_Settings::sanitize_item($raw_item);
+
+$items = WMAB_Settings::get_menu_items();
+$items[] = $sanitized;
+update_option('wmab_menu_items', $items);
+update_option('wmab_flush_rewrite', true);
+```
+
+---
+
+### WMAB_Settings::is_our_page()
+
+Checks if the current admin screen is the plugin's WooCommerce Settings tab.
+
+<ParamField path="none" type="void">
+  This method takes no parameters
+</ParamField>
+
+<ResponseField name="return" type="bool">
+  True if currently viewing the plugin's settings page, false otherwise
+</ResponseField>
+
+#### Example: Conditional Admin Script
+
+```php
+add_action('admin_enqueue_scripts', function() {
+    if (WMAB_Settings::is_our_page()) {
+        wp_enqueue_script('my-custom-admin-script');
+    }
+});
+```
+
+---
+
+## WMAB_Frontend
+
+**File:** `includes/class-wmab-frontend.php`  
+**Namespace:** Global
+
+Handles frontend rendering, menu filtering, and asset enqueuing on the My Account page.
+
+### WMAB_Frontend::instance()
+
+Retrieves the singleton instance.
+
+<ResponseField name="return" type="WMAB_Frontend">
+  The singleton instance of the frontend class
+</ResponseField>
+
+---
+
+### WMAB_Frontend::filter_menu_items()
+
+Filters WooCommerce menu items to apply custom configuration, role-based visibility, and custom ordering.
+
+**Hook:** `woocommerce_account_menu_items` (priority 999)
+
+<ParamField path="$wc_items" type="array" required>
+  Default WooCommerce menu items as associative array of slug => title
+</ParamField>
+
+<ResponseField name="return" type="array">
+  Filtered menu items with custom configuration applied
+</ResponseField>
+
+#### How It Works
+
+1. Retrieves saved menu configuration via `WMAB_Settings::get_menu_items()`
+2. Filters out disabled items
+3. Applies role-based visibility (current user's roles)
+4. Builds array with proper keys:
+   - Endpoint items: use endpoint slug
+   - Link items: use `wmab-link--{id}` prefix
+   - Separator items: use `wmab-sep--{id}` prefix
+
+---
+
+### WMAB_Frontend::filter_endpoint_url()
+
+Modifies endpoint URLs to handle link items and separators.
+
+**Hook:** `woocommerce_get_endpoint_url` (priority 10)
+
+<ParamField path="$url" type="string" required>
+  The default endpoint URL
+</ParamField>
+
+<ParamField path="$endpoint" type="string" required>
+  The endpoint slug
+</ParamField>
+
+<ParamField path="$value" type="string">
+  Optional value passed to endpoint
+</ParamField>
+
+<ParamField path="$permalink" type="string" required>
+  The My Account page permalink
+</ParamField>
+
+<ResponseField name="return" type="string">
+  Modified URL (external URL for link items, '#' for separators, or original URL)
+</ResponseField>
+
+#### Example Behavior
+
+```php
+// Link item: wmab-link--abc123
+// Returns: https://example.com (from item's 'url' field)
+
+// Separator item: wmab-sep--xyz789
+// Returns: '#'
+
+// Normal endpoint: orders
+// Returns: /my-account/orders/ (unchanged)
+```
+
+---
+
+## WMAB_Endpoints
+
+**File:** `includes/class-wmab-endpoints.php`  
+**Namespace:** Global
+
+Handles custom endpoint registration, query vars, and content rendering.
+
+### WMAB_Endpoints::instance()
+
+Retrieves the singleton instance.
+
+<ResponseField name="return" type="WMAB_Endpoints">
+  The singleton instance of the endpoints class
+</ResponseField>
+
+---
+
+### WMAB_Endpoints::register_endpoints()
+
+Registers custom endpoint slugs with WordPress rewrite system.
+
+**Hook:** `init` (priority 5)
+
+<ParamField path="none" type="void">
+  This method takes no parameters
+</ParamField>
+
+<ResponseField name="return" type="void">
+  Calls `add_rewrite_endpoint()` for each custom endpoint
+</ResponseField>
+
+#### Example: Check Registered Endpoints
+
+```php
+add_action('init', function() {
+    global $wp_rewrite;
+    // After WMAB_Endpoints::register_endpoints() runs
+    print_r($wp_rewrite->endpoints);
+}, 6);
+```
+
+---
+
+### WMAB_Endpoints::add_query_vars()
+
+Adds custom endpoint slugs to WooCommerce query vars.
+
+**Hook:** `woocommerce_get_query_vars` (priority 10)
+
+<ParamField path="$vars" type="array" required>
+  Existing WooCommerce query variables
+</ParamField>
+
+<ResponseField name="return" type="array">
+  Query vars array with custom endpoints added
+</ResponseField>
+
+---
+
+### WMAB_Endpoints::maybe_flush_rewrite()
+
+Conditionally flushes rewrite rules if the `wmab_flush_rewrite` option is set.
+
+**Hook:** `init` (priority 20)
+
+<ParamField path="none" type="void">
+  This method takes no parameters
+</ParamField>
+
+<ResponseField name="return" type="void">
+  Flushes rewrite rules and deletes the flag option if needed
+</ResponseField>
+
+#### When Rewrite Flush Occurs
+
+- After saving menu configuration (via AJAX)
+- After importing menu configuration
+- After plugin activation
+- After programmatic menu updates
+
+---
+
+## Constants Reference
+
+These constants are defined in the main plugin file and available globally after plugin initialization.
+
+### WMAB_VERSION
+
+<ParamField path="value" type="string">
+  Current plugin version (e.g., `'1.3.0'`)
+</ParamField>
+
+#### Example
+
+```php
+if (defined('WMAB_VERSION')) {
+    wp_enqueue_script('my-script', 'script.js', [], WMAB_VERSION);
+}
+```
+
+---
+
+### WMAB_PLUGIN_DIR
+
+<ParamField path="value" type="string">
+  Absolute filesystem path to the plugin directory with trailing slash
+</ParamField>
+
+#### Example
+
+```php
+require_once WMAB_PLUGIN_DIR . 'includes/my-custom-file.php';
+```
+
+---
+
+### WMAB_PLUGIN_URL
+
+<ParamField path="value" type="string">
+  URL to the plugin directory with trailing slash
+</ParamField>
+
+#### Example
+
+```php
+wp_enqueue_style('my-style', WMAB_PLUGIN_URL . 'assets/css/custom.css');
+```
+
+---
+
+### WMAB_PLUGIN_FILE
+
+<ParamField path="value" type="string">
+  Absolute path to the main plugin file
+</ParamField>
+
+---
+
+### WMAB_PLUGIN_BASENAME
+
+<ParamField path="value" type="string">
+  Plugin basename (e.g., `'my-account-menu-builder-for-woocommerce/my-account-menu-builder-for-woocommerce.php'`)
+</ParamField>
+
+## Database Options
+
+The plugin stores data in WordPress options table:
+
+### wmab_menu_items
+
+**Type:** Array (serialized)  
+**Description:** Complete menu configuration with all items and their settings
+
+#### Example: Direct Database Access
+
+```php
+// Get menu items (prefer WMAB_Settings::get_menu_items() instead)
+$items = get_option('wmab_menu_items', []);
+
+// Update menu items
+update_option('wmab_menu_items', $sanitized_items);
+
+// Delete menu configuration (reset to defaults)
+delete_option('wmab_menu_items');
+```
+
+---
+
+### wmab_white_label
+
+**Type:** Array (serialized)  
+**Description:** White-label configuration
+
+#### Example
+
+```php
+// Get white-label settings (prefer WMAB_Settings::get_white_label() instead)
+$wl = get_option('wmab_white_label', []);
+
+// Update white-label settings
+update_option('wmab_white_label', [
+    'enabled'     => true,
+    'plugin_name' => 'Custom Menu Manager',
+    'author_name' => 'Your Agency',
+    'menu_title'  => 'Menu Manager',
+]);
+```
+
+---
+
+### wmab_flush_rewrite
+
+**Type:** Boolean  
+**Description:** Flag to indicate rewrite rules should be flushed on next page load
+
+#### Example
+
+```php
+// Trigger rewrite flush (done automatically by plugin when needed)
+update_option('wmab_flush_rewrite', true);
+```
+
+## Complete Integration Example
+
+Here's a complete example that demonstrates programmatic menu management:
+
+```php
+/**
+ * Add custom menu items for a membership plugin
+ */
+add_action('plugins_loaded', function() {
+    // Ensure plugin is loaded
+    if (!class_exists('WMAB_Settings')) {
+        return;
+    }
+    
+    // Get current menu items
+    $items = WMAB_Settings::get_menu_items();
+    
+    // Check if our custom item already exists
+    $exists = false;
+    foreach ($items as $item) {
+        if ($item['endpoint'] === 'membership-portal') {
+            $exists = true;
+            break;
+        }
+    }
+    
+    // Add custom membership portal if it doesn't exist
+    if (!$exists) {
+        $new_item = WMAB_Settings::sanitize_item([
+            'id'          => 'membership-portal',
+            'title'       => __('Membership Portal', 'textdomain'),
+            'type'        => 'endpoint',
+            'endpoint'    => 'membership-portal',
+            'content'     => '[membership_dashboard]',
+            'icon'        => 'dashicons dashicons-groups',
+            'roles'       => ['premium_member', 'vip_member'],
+            'enabled'     => true,
+            'badge_count' => 'orders',
+            'description' => __('Manage your membership', 'textdomain'),
+        ]);
+        
+        // Insert after dashboard (position 1)
+        array_splice($items, 1, 0, [$new_item]);
+        
+        // Save and trigger rewrite flush
+        update_option('wmab_menu_items', $items);
+        update_option('wmab_flush_rewrite', true);
+    }
+}, 11);
+
+/**
+ * Render custom endpoint content
+ */
+add_action('woocommerce_account_membership-portal_endpoint', function() {
+    echo '<div class="membership-portal">';
+    echo '<h2>' . __('Membership Portal', 'textdomain') . '</h2>';
+    
+    // Your custom content here
+    if (function_exists('display_membership_dashboard')) {
+        display_membership_dashboard();
+    } else {
+        echo do_shortcode('[membership_dashboard]');
+    }
+    
+    echo '</div>';
+});
+```
+
+## Next Steps
+
+- [Hooks & Filters Reference](/api/hooks-filters) - Available WordPress hooks
+- [Developer API Overview](/api/overview) - Architecture and integration patterns
+- [Contributing](/contributing) - Contributing to the plugin

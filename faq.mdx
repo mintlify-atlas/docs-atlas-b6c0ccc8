@@ -1,0 +1,112 @@
+---
+title: FAQ
+description: Frequently asked questions about My Account Menu Builder for WooCommerce
+---
+
+Find answers to common questions about installing, configuring, and using the My Account Menu Builder plugin.
+
+## Getting Started
+
+<AccordionGroup>
+  <Accordion title="Where do I find the plugin settings?">
+    Go to **WooCommerce → Settings** and click the **My Account Menu** tab. It's located after the default WooCommerce tabs (General, Products, Shipping, etc.).
+
+    <Tip>
+      You can also click the **Settings** link on the Plugins page next to the plugin name for quick access.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="My custom endpoint shows a 404 page">
+    After adding new endpoints, go to **Settings → Permalinks** and click **Save Changes** to flush rewrite rules. The plugin does this automatically on save, but a manual flush may be needed in some hosting configurations.
+
+    <Note>
+      If the 404 persists after flushing permalinks, check that your endpoint slug doesn't conflict with existing WordPress or WooCommerce slugs.
+    </Note>
+  </Accordion>
+</AccordionGroup>
+
+## Features & Functionality
+
+<AccordionGroup>
+  <Accordion title="Can I show different menu items to different user roles?">
+    Yes! Each menu item has a "Visible to Roles" option. Check the roles that should see the item. Leave all unchecked to make the item visible to everyone.
+
+    <Info>
+      This works with any custom roles created by membership or subscription plugins.
+    </Info>
+  </Accordion>
+
+  <Accordion title="Does this work with WooCommerce Memberships / Subscriptions?">
+    Yes. The plugin works with any WooCommerce extension that registers user roles. Custom roles from membership or subscription plugins will appear in the role visibility checkboxes.
+  </Accordion>
+
+  <Accordion title="Can I add icons to menu items?">
+    Absolutely. Every item supports WordPress Dashicons. Use the visual picker to choose from 36+ popular icons, or type any icon class manually.
+
+    <Tip>
+      Dashicons are bundled with WordPress core, so they add zero weight to your site.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="How do I create a custom 'My Account' page?">
+    Follow these steps:
+
+    1. Add a new menu item and set type to **Endpoint**
+    2. Enter a title (e.g., "My Wishlist")
+    3. The slug auto-generates (e.g., `my-wishlist`)
+    4. Add your page content (HTML or shortcodes) in the "Endpoint Content" field
+    5. Save and visit `/my-account/my-wishlist/`
+
+    <Info>
+      You can use any HTML or WordPress shortcodes in the endpoint content field.
+    </Info>
+  </Accordion>
+
+  <Accordion title="Can I add external links (not WooCommerce pages)?">
+    Yes. Set the item type to **Link** and enter any URL. You can also choose to open it in a new tab.
+  </Accordion>
+</AccordionGroup>
+
+## Migration & Portability
+
+<AccordionGroup>
+  <Accordion title="How do I migrate settings to another site?">
+    Click **Export** to download a JSON file, then **Import** on the other site. This transfers all menu items and white-label settings.
+
+    <Tip>
+      Export/import is perfect for agencies managing multiple client sites with similar menu structures.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Can I hide this plugin from clients?">
+    Yes! Enable **White Label** mode in the settings. You can rename the plugin, change the author, customize the tab label, and even hide it completely from the Plugins page.
+  </Accordion>
+</AccordionGroup>
+
+## Compatibility
+
+<AccordionGroup>
+  <Accordion title="Is it compatible with WooCommerce HPOS?">
+    Yes! The plugin explicitly declares compatibility with High-Performance Order Storage (HPOS). It only modifies the My Account navigation and never touches order data.
+  </Accordion>
+
+  <Accordion title="Is it compatible with the block-based Cart & Checkout?">
+    Yes! The plugin declares full compatibility with WooCommerce Cart & Checkout Blocks. It operates exclusively on the My Account page and doesn't interact with cart or checkout functionality.
+  </Accordion>
+
+  <Accordion title="Does it support multisite?">
+    Yes, the plugin works on WordPress Multisite. Activate it per-site or network-wide.
+  </Accordion>
+
+  <Accordion title="Is the plugin translation-ready?">
+    Yes! The plugin includes a `.pot` file and bundled translations for Spanish, French, German, Portuguese, Russian, Turkish, Chinese, Japanese, Arabic, and Italian. 
+
+    Community translations are welcome via [translate.wordpress.org](https://translate.wordpress.org/projects/wp-plugins/my-account-menu-builder-for-woocommerce/).
+  </Accordion>
+</AccordionGroup>
+
+## Need More Help?
+
+<Card title="Still have questions?" icon="github" href="https://github.com/nurkamol/my-account-menu-builder-for-woocommerce/issues">
+  Report bugs or request features on GitHub
+</Card>

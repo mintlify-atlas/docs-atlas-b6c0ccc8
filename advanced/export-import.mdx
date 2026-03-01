@@ -1,0 +1,416 @@
+---
+title: Export/Import JSON
+description: Migrate menu configurations and settings between sites using JSON export/import
+---
+
+The Export/Import feature allows you to transfer your entire menu configuration—including menu items, white-label settings, and all customizations—between sites in seconds.
+
+## Overview
+
+Export and Import work with a single JSON file that contains:
+
+- All menu items (endpoints, links, separators)
+- Menu item settings (icons, badges, roles, descriptions)
+- White-label configuration
+- Plugin version and export timestamp
+
+<Info>
+Export/Import is perfect for:
+- Migrating staging sites to production
+- Replicating configurations across multiple client sites
+- Creating backup snapshots of your menu setup
+- Sharing configurations with team members
+</Info>
+
+## Exporting Your Configuration
+
+<Steps>
+  <Step title="Navigate to Settings">
+    Go to **WooCommerce → Settings → My Account Menu**
+  </Step>
+  
+  <Step title="Click Export">
+    In the header toolbar, click the **Export** button
+  </Step>
+  
+  <Step title="Download JSON File">
+    Your browser will automatically download a JSON file named `woo-myaccount-menu-YYYY-MM-DD.json`
+  </Step>
+</Steps>
+
+### Export AJAX Handler
+
+The export is handled by the `wmab_export_menu` AJAX action.
+
+**Source code reference:**
+
+```php class-wmab-settings.php:456
+public function ajax_export_menu() {
+    check_ajax_referer( 'wmab_nonce', 'nonce' );
+    if ( ! current_user_can( 'manage_woocommerce' ) ) {
+        wp_send_json_error( 'Unauthorized' );
+    }
+    wp_send_json_success( [
+        'plugin'   => 'my-account-menu-builder-for-woocommerce',
+        'version'  => WMAB_VERSION,
+        'exported' => current_time( 'mysql' ),
+        'items'    => self::get_menu_items(),
+        'settings' => self::get_white_label(),
+    ] );
+}
+```
+
+## JSON File Structure
+
+Here's an example of the exported JSON structure:
+
+```json
+{
+  "plugin": "my-account-menu-builder-for-woocommerce",
+  "version": "1.3.0",
+  "exported": "2026-02-28 14:30:00",
+  "items": [
+    {
+      "id": "dashboard",
+      "title": "Dashboard",
+      "type": "endpoint",
+      "endpoint": "dashboard",
+      "url": "",
+      "content": "",
+      "icon": "dashicons dashicons-dashboard",
+      "roles": [],
+      "target": "_self",
+      "enabled": true,
+      "is_default": true,
+      "css_class": "",
+      "badge": "",
+      "badge_count": "",
+      "description": ""
+    },
+    {
+      "id": "orders",
+      "title": "Orders",
+      "type": "endpoint",
+      "endpoint": "orders",
+      "url": "",
+      "content": "",
+      "icon": "dashicons dashicons-cart",
+      "roles": [],
+      "target": "_self",
+      "enabled": true,
+      "is_default": true,
+      "css_class": "",
+      "badge": "",
+      "badge_count": "orders",
+      "description": "View your order history"
+    }
+  ],
+  "settings": {
+    "enabled": false,
+    "plugin_name": "My Account Menu Builder for WooCommerce",
+    "author_name": "",
+    "author_url": "",
+    "menu_title": "My Account Menu",
+    "hide_plugin": false
+  }
+}
+```
+
+### Field Descriptions
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `plugin` | string | Plugin identifier (always `my-account-menu-builder-for-woocommerce`) |
+| `version` | string | Plugin version at time of export |
+| `exported` | string | MySQL timestamp of when the export was created |
+| `items` | array | Array of menu item objects |
+| `settings` | object | White-label configuration object |
+
+### Menu Item Object Structure
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique identifier for the menu item |
+| `title` | string | Display title |
+| `type` | string | Item type: `endpoint`, `link`, or `separator` |
+| `endpoint` | string | WooCommerce endpoint slug (for type `endpoint`) |
+| `url` | string | External URL (for type `link`) |
+| `content` | string | Page content HTML/shortcodes (for type `endpoint`) |
+| `icon` | string | CSS icon classes (e.g., `dashicons dashicons-star-filled`) |
+| `roles` | array | User roles that can see this item (empty = all roles) |
+| `target` | string | Link target: `_self` or `_blank` |
+| `enabled` | boolean | Whether the item is active |
+| `is_default` | boolean | Whether this is a default WooCommerce item |
+| `css_class` | string | Custom CSS class for styling |
+| `badge` | string | Static badge text (e.g., "New", "Pro") |
+| `badge_count` | string | Dynamic counter: `orders` or `downloads` |
+| `description` | string | Subtitle/description text |
+
+## Importing a Configuration
+
+<Steps>
+  <Step title="Navigate to Settings">
+    Go to **WooCommerce → Settings → My Account Menu**
+  </Step>
+  
+  <Step title="Click Import">
+    In the header toolbar, click the **Import** button
+  </Step>
+  
+  <Step title="Select JSON File">
+    Choose your `.json` export file from your computer
+  </Step>
+  
+  <Step title="Confirm Import">
+    The plugin will validate and import the configuration immediately
+  </Step>
+</Steps>
+
+<Warning>
+**Import REPLACES your current configuration.** There is no merge functionality—the import completely overwrites:
+
+- All menu items
+- White-label settings
+
+Make sure to export your current setup first if you want to preserve it.
+</Warning>
+
+### Import AJAX Handler
+
+The import is handled by the `wmab_import_menu` AJAX action.
+
+**Source code reference:**
+
+```php class-wmab-settings.php:470
+public function ajax_import_menu() {
+    check_ajax_referer( 'wmab_nonce', 'nonce' );
+    if ( ! current_user_can( 'manage_woocommerce' ) ) {
+        wp_send_json_error( 'Unauthorized' );
+    }
+
+    $json = isset( $_POST['json'] ) ? json_decode( wp_unslash( $_POST['json'] ), true ) : null;
+    if ( ! $json || ! isset( $json['items'] ) || ! is_array( $json['items'] ) ) {
+        wp_send_json_error( 'Invalid JSON' );
+    }
+
+    $sanitized = array_map( [ __CLASS__, 'sanitize_item' ], $json['items'] );
+    update_option( 'wmab_menu_items', $sanitized );
+
+    if ( isset( $json['settings'] ) && is_array( $json['settings'] ) ) {
+        update_option( 'wmab_white_label', self::sanitize_white_label( $json['settings'] ) );
+    }
+
+    update_option( 'wmab_flush_rewrite', true );
+    wp_send_json_success( [ 'items' => $sanitized, 'settings' => self::get_white_label() ] );
+}
+```
+
+### What Happens During Import
+
+1. **Validation**: The plugin checks that the JSON contains a valid `items` array
+2. **Sanitization**: All menu items are sanitized using `sanitize_item()`
+3. **Menu Items Update**: Saves to `wmab_menu_items` option
+4. **Settings Update**: If `settings` exists in JSON, updates `wmab_white_label` option
+5. **Rewrite Flush**: Sets `wmab_flush_rewrite` flag to regenerate permalinks
+6. **Success Message**: Displays "Menu imported successfully!"
+
+## Frontend JavaScript Implementation
+
+The export/import UI is handled via JavaScript.
+
+**Export implementation (admin.js:357):**
+
+```javascript
+function doExport() {
+    $.post(wmabAdmin.ajaxUrl, { action: 'wmab_export_menu', nonce: wmabAdmin.nonce }, function (res) {
+        if (!res.success) return;
+        var blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'woo-myaccount-menu-' + new Date().toISOString().slice(0, 10) + '.json';
+        a.click();
+    });
+}
+```
+
+**Import implementation (admin.js:368):**
+
+```javascript
+function doImport(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function (ev) {
+        try {
+            var data = JSON.parse(ev.target.result);
+            if (!data.items || !Array.isArray(data.items)) {
+                notice('error', wmabAdmin.strings.importError);
+                return;
+            }
+            $.post(wmabAdmin.ajaxUrl, {
+                action: 'wmab_import_menu', nonce: wmabAdmin.nonce, json: ev.target.result
+            }, function (res) {
+                if (res.success) {
+                    items = res.data.items;
+                    render();
+                    notice('success', wmabAdmin.strings.importSuccess);
+                } else {
+                    notice('error', wmabAdmin.strings.importError);
+                }
+            });
+        } catch (err) {
+            notice('error', wmabAdmin.strings.importError);
+        }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+}
+```
+
+## Common Use Cases
+
+### Scenario 1: Staging to Production Migration
+
+<Steps>
+  <Step title="Configure on Staging">
+    Build and test your menu on the staging site
+  </Step>
+  
+  <Step title="Export Configuration">
+    Click **Export** to download the JSON file
+  </Step>
+  
+  <Step title="Import to Production">
+    On the production site, click **Import** and select your JSON file
+  </Step>
+  
+  <Step title="Verify">
+    Check the frontend My Account page to confirm everything imported correctly
+  </Step>
+</Steps>
+
+### Scenario 2: Multi-Site Deployment
+
+<Steps>
+  <Step title="Create Template Configuration">
+    Set up a "master" menu on one site with your ideal configuration
+  </Step>
+  
+  <Step title="Export Template">
+    Download the JSON and save it as your template file
+  </Step>
+  
+  <Step title="Deploy to All Sites">
+    Import the same JSON file on every client site or multisite subsite
+  </Step>
+</Steps>
+
+### Scenario 3: Configuration Backup
+
+<Accordion title="Why backup your configuration?">
+- **Before major changes**: Export before making significant menu restructuring
+- **Version control**: Keep dated exports as rollback points
+- **Documentation**: JSON files serve as human-readable documentation of your setup
+</Accordion>
+
+## Troubleshooting
+
+### Invalid Import Data Error
+
+**Cause:** The JSON file is corrupted, incomplete, or not from this plugin.
+
+**Solution:**
+- Verify the file is a valid JSON (use a JSON validator)
+- Ensure the `items` array exists in the root object
+- Re-export from the source site if the file appears damaged
+
+### Import Succeeds But Menu Looks Wrong
+
+**Cause:** The imported configuration may be from an older plugin version.
+
+**Solution:**
+- Check the `version` field in the JSON
+- Update the plugin to the latest version on both source and destination sites
+- Re-export after updating
+
+### 404 Errors After Import
+
+**Cause:** WordPress permalinks need to be flushed after importing new endpoints.
+
+**Solution:**
+Go to **Settings → Permalinks** and click **Save Changes** (no changes needed).
+
+<Note>
+The plugin automatically sets the `wmab_flush_rewrite` flag on import, but some hosting configurations require a manual flush.
+</Note>
+
+### White-Label Settings Not Importing
+
+**Cause:** The JSON file may be missing the `settings` object.
+
+**Solution:**
+- Re-export from the source site using the latest plugin version
+- Manually configure white-label settings if needed
+
+## Best Practices
+
+<Steps>
+  <Step title="Always Test First">
+    Import on a staging site before production to verify the configuration
+  </Step>
+  
+  <Step title="Name Files Descriptively">
+    Rename exports to include client name or site purpose (e.g., `client-name-menu-config.json`)
+  </Step>
+  
+  <Step title="Version Control">
+    Keep dated exports in your version control system or project documentation
+  </Step>
+  
+  <Step title="Export Before Major Changes">
+    Create a backup export before making significant menu modifications
+  </Step>
+  
+  <Step title="Document Custom Endpoints">
+    If your menu uses custom shortcodes or third-party plugin endpoints, document these dependencies alongside your export file
+  </Step>
+</Steps>
+
+## Security Considerations
+
+- Import/export requires `manage_woocommerce` capability
+- All imported data is sanitized before saving to the database
+- Nonce verification protects against CSRF attacks
+- URLs are sanitized with `esc_url_raw()`
+- HTML content is filtered with `wp_kses_post()`
+
+**Sanitization reference (class-wmab-settings.php:510):**
+
+```php
+public static function sanitize_item( $item ) {
+    $type = in_array( $item['type'] ?? '', [ 'endpoint', 'link', 'separator' ], true ) ? $item['type'] : 'endpoint';
+    return [
+        'id'          => sanitize_key( $item['id'] ?? wp_generate_uuid4() ),
+        'title'       => sanitize_text_field( $item['title'] ?? '' ),
+        'type'        => $type,
+        'endpoint'    => sanitize_title( $item['endpoint'] ?? '' ),
+        'url'         => esc_url_raw( $item['url'] ?? '' ),
+        'content'     => wp_kses_post( $item['content'] ?? '' ),
+        'icon'        => sanitize_text_field( $item['icon'] ?? '' ),
+        'roles'       => array_map( 'sanitize_key', (array) ( $item['roles'] ?? [] ) ),
+        'target'      => in_array( $item['target'] ?? '', [ '_self', '_blank' ], true ) ? $item['target'] : '_self',
+        'enabled'     => (bool) ( $item['enabled'] ?? true ),
+        'is_default'  => (bool) ( $item['is_default'] ?? false ),
+        'css_class'   => sanitize_text_field( $item['css_class'] ?? '' ),
+        'badge'       => sanitize_text_field( $item['badge'] ?? '' ),
+        'badge_count' => in_array( $item['badge_count'] ?? '', [ '', 'orders', 'downloads' ], true ) ? $item['badge_count'] : '',
+        'description' => sanitize_text_field( $item['description'] ?? '' ),
+    ];
+}
+```
+
+## Related Resources
+
+- [White-Label Mode](/advanced/white-label) - Configure white-label branding included in exports
+- [Troubleshooting](/advanced/troubleshooting) - Common import/export issues
+- [API Reference](/api/hooks-filters) - Advanced customization via hooks and filters

@@ -1,0 +1,174 @@
+---
+title: Contributing
+description: Learn how to contribute to My Account Menu Builder for WooCommerce
+---
+
+We welcome contributions from the community! Whether you're fixing bugs, adding features, or improving documentation, your help makes this plugin better for everyone.
+
+## Ways to Contribute
+
+There are several ways you can contribute to this project:
+
+- **Report bugs** — Help us identify and fix issues
+- **Request features** — Share ideas for new functionality
+- **Submit code** — Fix bugs or implement new features
+- **Translate** — Help make the plugin available in more languages
+- **Improve documentation** — Make it easier for others to use the plugin
+
+## Getting Started
+
+<Steps>
+  <Step title="Fork the repository">
+    Visit the [GitHub repository](https://github.com/nurkamol/my-account-menu-builder-for-woocommerce) and click the **Fork** button to create your own copy.
+  </Step>
+
+  <Step title="Clone your fork">
+    ```bash
+    git clone https://github.com/YOUR-USERNAME/my-account-menu-builder-for-woocommerce.git
+    cd my-account-menu-builder-for-woocommerce
+    ```
+  </Step>
+
+  <Step title="Create a feature branch">
+    ```bash
+    git checkout -b feature/amazing-feature
+    ```
+
+    <Tip>
+      Use descriptive branch names like `feature/add-custom-icons` or `fix/permalink-flush`.
+    </Tip>
+  </Step>
+
+  <Step title="Make your changes">
+    Write your code, following the WordPress Coding Standards and plugin architecture.
+  </Step>
+
+  <Step title="Commit your changes">
+    ```bash
+    git commit -m 'Add amazing feature'
+    ```
+  </Step>
+
+  <Step title="Push to your fork">
+    ```bash
+    git push origin feature/amazing-feature
+    ```
+  </Step>
+
+  <Step title="Open a Pull Request">
+    Go to the original repository and click **New Pull Request**. Describe your changes and submit for review.
+  </Step>
+</Steps>
+
+## Code Guidelines
+
+### WordPress Coding Standards
+
+This plugin follows the [WordPress Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/). Please ensure your code:
+
+- Uses proper indentation (tabs, not spaces)
+- Includes proper docblocks for functions and classes
+- Sanitizes and validates all user input
+- Escapes all output properly
+- Uses WordPress core functions when available
+
+<Note>
+  You can use [PHP_CodeSniffer](https://github.com/squizlabs/PHP_CodeSniffer) with WordPress standards to check your code.
+</Note>
+
+### Plugin Architecture
+
+The plugin is organized into the following structure:
+
+```
+my-account-menu-builder-for-woocommerce/
+├── my-account-menu-builder-for-woocommerce.php     # Main plugin file
+├── includes/
+│   ├── class-wmab-settings.php         # Admin GUI and settings
+│   ├── class-wmab-frontend.php         # Frontend menu rendering
+│   └── class-wmab-endpoints.php        # Custom endpoint registration
+├── assets/
+│   ├── css/                            # Stylesheets
+│   └── js/                             # JavaScript files
+└── languages/                          # Translation files
+```
+
+### Testing
+
+Before submitting your pull request:
+
+1. Test with the latest version of WordPress and WooCommerce
+2. Verify compatibility with PHP 7.4 and above
+3. Check that your changes don't break existing functionality
+4. Test with HPOS enabled and disabled
+5. Ensure no JavaScript console errors
+
+## Reporting Bugs
+
+Found a bug? Please [open an issue](https://github.com/nurkamol/my-account-menu-builder-for-woocommerce/issues) with:
+
+- **Clear title** — Summarize the issue in a few words
+- **Description** — Detailed explanation of the problem
+- **Steps to reproduce** — How to recreate the bug
+- **Expected behavior** — What should happen
+- **Actual behavior** — What actually happens
+- **Environment** — WordPress version, WooCommerce version, PHP version, theme name
+- **Screenshots** — If applicable
+
+<Info>
+  The more details you provide, the faster we can identify and fix the issue.
+</Info>
+
+## Requesting Features
+
+Have an idea for a new feature? [Open a feature request](https://github.com/nurkamol/my-account-menu-builder-for-woocommerce/issues) and describe:
+
+- **Use case** — What problem does this solve?
+- **Proposed solution** — How should it work?
+- **Alternatives** — Any other approaches you considered?
+
+## Translation
+
+Help translate this plugin into your language!
+
+### Via WordPress.org
+
+The easiest way is through the [WordPress.org translation platform](https://translate.wordpress.org/projects/wp-plugins/my-account-menu-builder-for-woocommerce/).
+
+### Via GitHub
+
+Alternatively, you can submit `.po` files via pull request to the `/languages` directory:
+
+1. Copy the `.pot` template file
+2. Translate using [Poedit](https://poedit.net/) or similar tool
+3. Submit a pull request with your `.po` and `.mo` files
+
+<Note>
+  Currently bundled translations: Spanish, French, German, Portuguese (Brazil), Russian, Turkish, Chinese (Simplified), Japanese, Arabic, and Italian.
+</Note>
+
+## Community Guidelines
+
+- Be respectful and constructive in all interactions
+- Follow the [WordPress Community Code of Conduct](https://make.wordpress.org/handbook/community-code-of-conduct/)
+- Help others when you can
+- Give credit where credit is due
+
+## Get in Touch
+
+<CardGroup cols={2}>
+  <Card title="GitHub Issues" icon="github" href="https://github.com/nurkamol/my-account-menu-builder-for-woocommerce/issues">
+    Report bugs and request features
+  </Card>
+  <Card title="Email" icon="envelope" href="mailto:nurkamol@gmail.com">
+    Contact the author directly
+  </Card>
+</CardGroup>
+
+## License
+
+By contributing to this project, you agree that your contributions will be licensed under the [GNU General Public License v2.0](https://www.gnu.org/licenses/gpl-2.0.html).
+
+<Tip>
+  Thank you for contributing to My Account Menu Builder for WooCommerce!
+</Tip>

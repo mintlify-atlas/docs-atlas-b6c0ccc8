@@ -1,80 +1,197 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quick start guide
+description: Build your first custom My Account menu item in under 5 minutes with this step-by-step guide.
 ---
 
-## Get started in three steps
+This guide will walk you through creating your first customized WooCommerce My Account menu. By the end, you'll know how to add custom items, reorder the menu, and add icons.
 
-Get your documentation site running locally and make your first customization.
+## Access the menu builder
 
-### Step 1: Set up your local environment
+<Steps>
+  <Step title="Navigate to settings">
+    Go to **WooCommerce → Settings** in your WordPress admin, then click the **My Account Menu** tab.
+  </Step>
+  
+  <Step title="Review the interface">
+    You'll see the drag & drop menu builder with a live preview sidebar showing your current menu items. The default WooCommerce items (Dashboard, Orders, Downloads, etc.) are already loaded.
+  </Step>
+</Steps>
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+<Info>
+The live preview shows exactly how your menu will appear to customers on the My Account page.
+</Info>
 
-### Step 2: Deploy your changes
+## Create your first custom menu item
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+Let's create a custom "Help Center" page in the My Account menu.
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+<Steps>
+  <Step title="Click 'Add Item'">
+    At the top of the menu builder, click the **Add Item** button to open the item editor modal.
+  </Step>
+  
+  <Step title="Enter basic details">
+    Fill in the following fields:
+    - **Title**: `Help Center`
+    - **Type**: Select `Endpoint` (this creates a new My Account page)
+    - **Endpoint Slug**: The slug auto-generates as `help-center` based on your title
+  </Step>
+  
+  <Step title="Add content">
+    In the **Endpoint Content** field, add your page content. You can use:
+    - Plain HTML: `<h2>Need Help?</h2><p>Contact our support team at support@example.com</p>`
+    - WordPress shortcodes: `[contact-form-7 id="123"]`
+    - Mixed content: Combine HTML and shortcodes
+  </Step>
+  
+  <Step title="Save the item">
+    Click **Save** to add the item to your menu. You'll see it appear in the menu builder list.
+  </Step>
+</Steps>
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+<Tip>
+Endpoint slugs are automatically generated from the title. You can customize the slug if needed, but avoid using slugs that conflict with existing WooCommerce endpoints.
+</Tip>
 
-### Step 3: Go live
+## Reorder menu items
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+Let's move your new Help Center item to a more prominent position.
+
+<Steps>
+  <Step title="Grab the item">
+    Click and hold the **drag handle** (six dots icon) on the left side of any menu item.
+  </Step>
+  
+  <Step title="Drag to position">
+    Drag the item up or down to your desired position. For example, drag "Help Center" to appear right after "Dashboard".
+  </Step>
+  
+  <Step title="Drop the item">
+    Release to drop the item in place. The live preview updates instantly.
+  </Step>
+  
+  <Step title="Save changes">
+    Scroll down and click **Save Changes** to persist your menu order.
+  </Step>
+</Steps>
+
+## Add an icon to your menu item
+
+Icons make your menu more visually appealing and easier to scan.
+
+<Steps>
+  <Step title="Edit the item">
+    Click the **Edit** (pencil icon) button on your "Help Center" item to reopen the editor modal.
+  </Step>
+  
+  <Step title="Open icon picker">
+    Scroll to the **Icon** section and click the **icon picker** button to see available icons.
+  </Step>
+  
+  <Step title="Select an icon">
+    Choose an icon from the visual picker (36+ popular icons), or enter a custom Dashicons or Font Awesome class:
+    - **Dashicons**: `dashicons-sos` (for help/support)
+    - **Font Awesome**: `fa-solid fa-circle-question`
+  </Step>
+  
+  <Step title="Save and preview">
+    Click **Save**. The icon appears next to your menu item in the live preview.
+  </Step>
+</Steps>
+
+<Note>
+As of version 1.3.0, the plugin uses WordPress Dashicons exclusively for zero additional weight. Font Awesome references in the codebase are from earlier versions.
+</Note>
+
+## Create an external link
+
+You can also add external links to resources outside the My Account area.
+
+<Steps>
+  <Step title="Add a new item">
+    Click **Add Item** again.
+  </Step>
+  
+  <Step title="Configure as link">
+    - **Title**: `Product Documentation`
+    - **Type**: Select `Link`
+    - **URL**: `https://docs.example.com`
+    - **Open in new tab**: Check this option to open the link in a new browser tab
+  </Step>
+  
+  <Step title="Add icon (optional)">
+    Select an icon like `dashicons-book` or `dashicons-media-document`.
+  </Step>
+  
+  <Step title="Save">
+    Click **Save** to add the external link to your menu.
+  </Step>
+</Steps>
+
+## Test your menu on the frontend
+
+<Steps>
+  <Step title="Save all changes">
+    Make sure you've clicked **Save Changes** at the bottom of the settings page.
+  </Step>
+  
+  <Step title="Visit My Account page">
+    Navigate to your WooCommerce My Account page (typically at `/my-account/`).
+  </Step>
+  
+  <Step title="Check custom endpoint">
+    Click your "Help Center" menu item. You should see your custom content at `/my-account/help-center/`.
+  </Step>
+</Steps>
+
+<Warning>
+If you see a 404 error on your custom endpoint, go to **Settings → Permalinks** and click **Save Changes** to flush rewrite rules. This is rarely needed but may be required on some hosting configurations.
+</Warning>
+
+## Common customizations
+
+### Add a badge to an item
+
+Badges help highlight new features or important sections:
+
+1. Edit any menu item
+2. Scroll to the **Badge** section
+3. Choose **Static badge** and enter text like `New`, `Pro`, or `Hot`
+4. Or choose **Dynamic counter** to show order count or download count
+5. Save the item
+
+### Add a separator
+
+Separators create visual groups in your menu:
+
+1. Click **Add Item**
+2. Set **Type** to `Separator`
+3. Optionally add a **Title** (appears as a group label)
+4. Drag to position the separator between groups
+5. Save
+
+### Hide items from specific roles
+
+Role-based visibility lets you show items only to certain user types:
+
+1. Edit any menu item
+2. Scroll to **Visible to Roles**
+3. Check the roles that should see this item (e.g., only "Administrator" and "Shop Manager")
+4. Leave all unchecked to make the item visible to everyone
+5. Save
+
+<Tip>
+This works with custom roles from membership plugins, subscription plugins, and any other plugin that registers WordPress user roles.
+</Tip>
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
+Now that you've built your first custom menu, explore more advanced features:
 
-<CardGroup cols={2}>
+- [Custom endpoints](/features/custom-endpoints) — Learn about endpoint content options and shortcode support
+- [Icons & badges](/features/badges-counters) — Master icon selection and dynamic counters
+- [Role-based visibility](/features/role-based-visibility) — Create role-specific menus for different customer types
+- [Export & import](/advanced/export-import) — Migrate your menu configuration between sites
+- [White-label mode](/advanced/white-label) — Rebrand the plugin for client projects
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+Have questions? Check the [FAQ](/faq) or view the [troubleshooting guide](/advanced/troubleshooting).

@@ -1,0 +1,112 @@
+---
+title: Installation
+description: Install My Account Menu Builder for WooCommerce in minutes with automatic or manual installation.
+---
+
+## Requirements
+
+Before installing the plugin, ensure your WordPress site meets these requirements:
+
+- **WordPress** 5.8 or higher
+- **WooCommerce** 5.0 or higher (WooCommerce must be installed and activated)
+- **PHP** 7.4 or higher
+
+<Note>
+The plugin declares WooCommerce as a required dependency. WordPress will automatically prompt you to install WooCommerce if it's not already active.
+</Note>
+
+## Automatic installation
+
+Automatic installation is the easiest way to install the plugin directly from your WordPress admin dashboard.
+
+<Steps>
+  <Step title="Navigate to plugins">
+    In your WordPress admin, go to **Plugins → Add New**.
+  </Step>
+  
+  <Step title="Search for the plugin">
+    In the search box, type **"My Account Menu Builder for WooCommerce"**.
+  </Step>
+  
+  <Step title="Install and activate">
+    Click **Install Now** next to the plugin, then click **Activate** when the installation completes.
+  </Step>
+  
+  <Step title="Access settings">
+    Navigate to **WooCommerce → Settings → My Account Menu** tab to start building your menu.
+  </Step>
+</Steps>
+
+## Manual installation
+
+If you prefer to install the plugin manually or have downloaded it from GitHub, follow these steps:
+
+<Steps>
+  <Step title="Download the plugin">
+    Download the plugin ZIP file from [WordPress.org](https://wordpress.org/plugins/my-account-menu-builder-for-woocommerce/) or [GitHub](https://github.com/nurkamol/my-account-menu-builder-for-woocommerce/releases).
+  </Step>
+  
+  <Step title="Upload to WordPress">
+    In your WordPress admin, go to **Plugins → Add New → Upload Plugin**.
+  </Step>
+  
+  <Step title="Choose the ZIP file">
+    Click **Choose File**, select the downloaded ZIP file, then click **Install Now**.
+  </Step>
+  
+  <Step title="Activate the plugin">
+    After installation completes, click **Activate Plugin**.
+  </Step>
+</Steps>
+
+## Finding the settings
+
+Once activated, you can access the plugin settings in two ways:
+
+### Method 1: WooCommerce settings tab
+
+Go to **WooCommerce → Settings** in your WordPress admin, then click the **My Account Menu** tab. The tab appears after the default WooCommerce tabs (General, Products, Shipping, etc.).
+
+### Method 2: Plugin action link
+
+On the **Plugins** page, find **My Account Menu Builder for WooCommerce** in the list and click the **Settings** link below the plugin name.
+
+<Tip>
+The plugin integrates directly into WooCommerce settings for a native experience. You won't find a separate top-level menu item.
+</Tip>
+
+## Post-installation setup
+
+### Initial configuration
+
+After activation, the plugin automatically:
+
+- Preserves all default WooCommerce menu items (Dashboard, Orders, Downloads, Addresses, Account details, Logout)
+- Enables live preview mode
+- Prepares rewrite rules for custom endpoints
+
+<Note>
+When you add custom endpoints, the plugin automatically flushes rewrite rules. If you encounter 404 errors on custom endpoints, go to **Settings → Permalinks** and click **Save Changes** to manually flush rewrite rules.
+</Note>
+
+### WooCommerce dependency check
+
+If WooCommerce is not installed or activated, you'll see an admin notice:
+
+<Warning>
+**My Account Menu Builder for WooCommerce**: WooCommerce is required. Please install and activate WooCommerce.
+</Warning>
+
+The plugin will not function until WooCommerce is active.
+
+## Multisite installation
+
+For WordPress Multisite networks:
+
+- **Network activation**: Activate the plugin network-wide to enable it on all sites
+- **Per-site activation**: Activate on individual sites for site-specific control
+- Each site maintains its own menu configuration
+
+## Next steps
+
+Now that the plugin is installed, you're ready to build your first custom menu! Check out the [quick start guide](/quickstart) to create your first menu item in under 5 minutes.

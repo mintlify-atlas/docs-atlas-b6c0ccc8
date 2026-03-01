@@ -1,0 +1,566 @@
+---
+title: 'Badges & Dynamic Counters'
+description: 'Add static badges and dynamic counters to menu items for notifications and highlights'
+---
+
+Badges and counters let you add visual indicators to menu items—perfect for showing notifications, highlighting new features, or displaying dynamic counts like order totals.
+
+## Overview
+
+The plugin supports two types of menu item indicators:
+
+- **Static Badges** — Fixed text labels (e.g., "New", "Hot", "Pro")
+- **Dynamic Counters** — Real-time numbers pulled from WooCommerce (e.g., order count, download count)
+
+<Info>
+  Badges appear as small colored labels next to menu item titles, both in the builder preview and on the frontend.
+</Info>
+
+## Badge Types
+
+### Static Badges
+
+Static badges display custom text that you define:
+
+**Examples:**
+- `New` — Highlight newly added features
+- `Pro` — Mark premium/paid features  
+- `Hot` — Promote popular sections
+- `Beta` — Indicate features in testing
+- `Limited` — Show time-sensitive offers
+
+### Dynamic Counters
+
+Dynamic counters display real-time numbers from WooCommerce:
+
+<Tabs>
+  <Tab title="Order Count">
+    Shows the total number of orders for the current user.
+    
+    ```php
+    // Order count calculation (class-wmab-frontend.php:167-168)
+    if ( 'orders' === $item['badge_count'] ) {
+        $count = (int) wc_get_customer_order_count( $user_id );
+    }
+    ```
+    
+    **Example:** "Orders (12)"
+  </Tab>
+  
+  <Tab title="Download Count">
+    Shows the number of available downloads for the current user.
+    
+    ```php
+    // Download count calculation (class-wmab-frontend.php:169-171)
+    elseif ( 'downloads' === $item['badge_count'] ) {
+        $downloads = wc_get_customer_available_downloads( $user_id );
+        $count = is_array( $downloads ) ? count( $downloads ) : 0;
+    }
+    ```
+    
+    **Example:** "Downloads (3)"
+  </Tab>
+</Tabs>
+
+## Adding Badges
+
+<Steps>
+  <Step title="Open Item Editor">
+    Click the edit button (✏️) on any menu item, or create a new item.
+  </Step>
+  
+  <Step title="Find Badge Fields">
+    Scroll to the **Badge Text** and **Dynamic Count** fields (displayed side-by-side).
+  </Step>
+  
+  <Step title="Choose Badge Type">
+    - For **static badge**: Enter text in "Badge Text" field
+    - For **dynamic counter**: Select option from "Dynamic Count" dropdown
+    - Leave both empty for no badge
+  </Step>
+  
+  <Step title="Save">
+    Click **Save Item**, then **Save Menu**.
+  </Step>
+</Steps>
+
+<Note>
+  You can use **either** a static badge **or** a dynamic counter—not both simultaneously. If both are set, the dynamic counter takes precedence.
+</Note>
+
+## Badge Configuration
+
+### Badge Text Field
+
+The Badge Text field accepts any short text string:
+
+```php
+// Badge text sanitization (class-wmab-settings.php:525)
+'badge' => sanitize_text_field( $item['badge'] ?? '' )
+```
+
+**Recommendations:**
+- Keep it short (1-3 words max)
+- Use title case or ALL CAPS for emphasis
+- Avoid special characters
+
+<Tabs>
+  <Tab title="Good Examples">
+    - `New`
+    - `Hot`
+    - `Pro`
+    - `Sale`
+    - `Beta`
+    - `Coming Soon`
+    - `Limited`
+  </Tab>
+  
+  <Tab title="Bad Examples">
+    - `This is a really long badge text` (too long)
+    - `!!!NEW!!!` (excessive punctuation)
+    - `Click Here Now` (too wordy)
+  </Tab>
+</Tabs>
+
+### Dynamic Count Field
+
+The Dynamic Count dropdown has three options:
+
+```php
+// Dynamic count options (class-wmab-settings.php:394-398)
+<select id="wmab-item-badge-count">
+    <option value=""><?php esc_html_e( 'None' ); ?></option>
+    <option value="orders"><?php esc_html_e( 'Order Count' ); ?></option>
+    <option value="downloads"><?php esc_html_e( 'Download Count' ); ?></option>
+</select>
+```
+
+**Validation:**
+
+```php
+// Only these values are allowed (class-wmab-settings.php:526)
+'badge_count' => in_array( $item['badge_count'] ?? '', [ '', 'orders', 'downloads' ], true ) ? $item['badge_count'] : ''
+```
+
+## Badge Rendering
+
+### Frontend HTML
+
+Badges are rendered as `<span>` elements with CSS classes:
+
+```php
+// Badge HTML generation (class-wmab-frontend.php:159-184)
+private static function get_badge_html( $item ) {
+    $badge = '';
+
+    // Dynamic count
+    if ( ! empty( $item['badge_count'] ) && is_user_logged_in() ) {
+        $count = 0;
+        $user_id = get_current_user_id();
+
+        if ( 'orders' === $item['badge_count'] ) {
+            $count = (int) wc_get_customer_order_count( $user_id );
+        } elseif ( 'downloads' === $item['badge_count'] ) {
+            $downloads = wc_get_customer_available_downloads( $user_id );
+            $count = is_array( $downloads ) ? count( $downloads ) : 0;
+        }
+
+        if ( $count > 0 ) {
+            $badge = '<span class="wmab-badge wmab-badge-count">' . esc_html( $count ) . '</span>';
+        }
+    }
+    // Static badge
+    elseif ( ! empty( $item['badge'] ) ) {
+        $badge = '<span class="wmab-badge">' . esc_html( $item['badge'] ) . '</span>';
+    }
+
+    return $badge;
+}
+```
+
+**CSS Classes:**
+- `.wmab-badge` — Base badge style
+- `.wmab-badge-count` — Additional class for dynamic counters
+
+### Badge Injection
+
+Badges are injected via JavaScript after page load:
+
+```javascript
+// Frontend badge injection (assets/js/frontend.js)
+$.each(wmabFront.items, function(key, config) {
+    var $link = $('.woocommerce-MyAccount-navigation-link--' + key + ' a');
+    
+    // Add badge if present
+    if (config.badge) {
+        $link.append(' ' + config.badge);
+    }
+});
+```
+
+## Styling Badges
+
+Customize badge appearance with CSS:
+
+### Default Styling
+
+```css
+/* Base badge style */
+.wmab-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    color: #fff;
+    background-color: #e74c3c;
+    border-radius: 10px;
+    margin-left: 6px;
+}
+
+/* Counter-specific badge */
+.wmab-badge-count {
+    background-color: #3498db;
+}
+```
+
+### Custom Badge Colors
+
+```css
+/* New feature badge - green */
+.woocommerce-MyAccount-navigation-link--my-new-feature .wmab-badge {
+    background-color: #27ae60;
+}
+
+/* Hot/Sale badge - red */
+.woocommerce-MyAccount-navigation-link--sale .wmab-badge {
+    background-color: #e74c3c;
+    animation: pulse 2s infinite;
+}
+
+/* Pro/Premium badge - gold */
+.woocommerce-MyAccount-navigation-link--premium .wmab-badge {
+    background-color: #f39c12;
+    color: #000;
+}
+```
+
+### Badge Animations
+
+```css
+/* Pulse animation for "Hot" badges */
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.9;
+    }
+}
+
+.wmab-badge {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* Shake animation for notifications */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+}
+
+.wmab-badge-count {
+    animation: shake 0.5s ease-in-out;
+}
+```
+
+## Use Cases
+
+<AccordionGroup>
+  <Accordion title="Highlight New Features">
+    **Scenario:** You've added a new Wishlist feature and want to draw attention to it.
+    
+    **Configuration:**
+    - **Badge Text:** `New`
+    - **Badge Color:** Green (#27ae60)
+    
+    ```css
+    .woocommerce-MyAccount-navigation-link--wishlist .wmab-badge {
+        background-color: #27ae60;
+    }
+    ```
+    
+    Remove the badge after a few weeks once users are familiar with the feature.
+  </Accordion>
+  
+  <Accordion title="Show Order Count">
+    **Scenario:** Display order count next to "Orders" menu item.
+    
+    **Configuration:**
+    - **Item:** Orders
+    - **Dynamic Count:** Order Count
+    
+    Result: "Orders (12)" dynamically updates as user places more orders.
+  </Accordion>
+  
+  <Accordion title="Promote Premium Features">
+    **Scenario:** Mark premium/paid features with a "Pro" badge.
+    
+    **Configuration:**
+    - **Badge Text:** `Pro`
+    - **Role Restriction:** None (everyone sees it, but only premium members can access)
+    - **Badge Color:** Gold (#f39c12)
+    
+    Use role-based visibility instead if you want to hide it from non-premium users entirely.
+  </Accordion>
+  
+  <Accordion title="Limited-Time Offers">
+    **Scenario:** Promote a sale or limited-time feature.
+    
+    **Configuration:**
+    - **Badge Text:** `Hot` or `Sale`
+    - **Badge Color:** Red (#e74c3c)
+    - **Animation:** Pulse effect
+    
+    ```css
+    .woocommerce-MyAccount-navigation-link--sale .wmab-badge {
+        background-color: #e74c3c;
+        animation: pulse 2s infinite;
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Beta Features">
+    **Scenario:** Mark features in testing as "Beta".
+    
+    **Configuration:**
+    - **Badge Text:** `Beta`
+    - **Badge Color:** Orange (#f39c12)
+    - **Role Restriction:** Show only to testers or admins
+    
+    Combine with role-based visibility to limit access.
+  </Accordion>
+  
+  <Accordion title="Downloads Available">
+    **Scenario:** Show number of available downloads next to "Downloads" menu item.
+    
+    **Configuration:**
+    - **Item:** Downloads
+    - **Dynamic Count:** Download Count
+    
+    Result: "Downloads (3)" shows customer has 3 available downloads.
+  </Accordion>
+</AccordionGroup>
+
+## Custom Dynamic Counters
+
+The plugin currently supports two built-in counters (orders, downloads), but you can add custom counters with a filter:
+
+### Example: Wishlist Item Count
+
+```php
+// Add custom wishlist counter
+add_filter( 'wmab_badge_count', function( $count, $item, $user_id ) {
+    if ( isset( $item['badge_count'] ) && $item['badge_count'] === 'wishlist' ) {
+        // Get wishlist count from your wishlist plugin
+        // Example using YITH Wishlist:
+        if ( function_exists( 'YITH_WCWL' ) ) {
+            $wishlist = YITH_WCWL()->get_products( [ 'user_id' => $user_id ] );
+            $count = count( $wishlist );
+        }
+    }
+    return $count;
+}, 10, 3 );
+```
+
+### Example: Points/Rewards Balance
+
+```php
+// Add points balance counter
+add_filter( 'wmab_badge_count', function( $count, $item, $user_id ) {
+    if ( isset( $item['badge_count'] ) && $item['badge_count'] === 'points' ) {
+        // Get points from your rewards plugin
+        $points = get_user_meta( $user_id, 'reward_points_balance', true );
+        $count = (int) $points;
+    }
+    return $count;
+}, 10, 3 );
+```
+
+Then add a custom option to the builder dropdown:
+
+```javascript
+// Add custom counter option to admin dropdown
+jQuery(document).ready(function($) {
+    $('#wmab-item-badge-count').append('<option value="wishlist">Wishlist Count</option>');
+    $('#wmab-item-badge-count').append('<option value="points">Points Balance</option>');
+});
+```
+
+<Warning>
+  Custom counters require PHP filter hooks and may need JavaScript modifications to the admin builder.
+</Warning>
+
+## Zero Count Behavior
+
+Dynamic counters only display if the count is greater than zero:
+
+```php
+// Counter display logic (class-wmab-frontend.php:174-176)
+if ( $count > 0 ) {
+    $badge = '<span class="wmab-badge wmab-badge-count">' . esc_html( $count ) . '</span>';
+}
+```
+
+If a customer has 0 orders or 0 downloads, the counter badge won't appear at all.
+
+**To always show counters (even at 0):**
+
+```php
+add_filter( 'wmab_badge_html', function( $badge_html, $item, $user_id ) {
+    // Always show order count, even if zero
+    if ( $item['badge_count'] === 'orders' ) {
+        $count = wc_get_customer_order_count( $user_id );
+        return '<span class="wmab-badge wmab-badge-count">' . esc_html( $count ) . '</span>';
+    }
+    return $badge_html;
+}, 10, 3 );
+```
+
+## Builder Preview
+
+Badges are displayed in the menu builder's live preview panel:
+
+```javascript
+// Badge rendering in preview (admin.js:99)
+var badge = item.badge ? '<span class="wmab-pv-badge">' + esc(item.badge) + '</span>' : '';
+html += '<li' + active + '><a>' + icon + esc(item.title) + badge + '</a></li>';
+```
+
+Dynamic counters show the badge type name in the builder (e.g., "Count: orders") since live counts aren't available in the admin area:
+
+```javascript
+// Badge count metadata (admin.js:64)
+if (item.badge_count) meta.push('<span class="wmab-meta-badge">Count: ' + esc(item.badge_count) + '</span>');
+```
+
+## Performance Considerations
+
+<Tip>
+  **Caching:** Dynamic counters query WooCommerce functions on every page load. For high-traffic sites, consider caching counter values:
+</Tip>
+
+```php
+// Cache order count for 5 minutes
+add_filter( 'wmab_badge_count', function( $count, $item, $user_id ) {
+    if ( $item['badge_count'] === 'orders' ) {
+        $cache_key = 'wmab_order_count_' . $user_id;
+        $cached = get_transient( $cache_key );
+        
+        if ( false === $cached ) {
+            $count = wc_get_customer_order_count( $user_id );
+            set_transient( $cache_key, $count, 5 * MINUTE_IN_SECONDS );
+            return $count;
+        }
+        
+        return $cached;
+    }
+    return $count;
+}, 10, 3 );
+```
+
+<Warning>
+  Caching counters means they won't update immediately. Use short cache durations (1-5 minutes) for near-real-time counts.
+</Warning>
+
+## Accessibility
+
+Badges should be accessible to screen reader users:
+
+```html
+<!-- Add screen reader text for counters -->
+<span class="wmab-badge wmab-badge-count" aria-label="12 orders">12</span>
+```
+
+Implement with a filter:
+
+```php
+add_filter( 'wmab_badge_html', function( $badge_html, $item ) {
+    if ( $item['badge_count'] === 'orders' && preg_match( '/>([0-9]+)</', $badge_html, $matches ) ) {
+        $count = $matches[1];
+        $badge_html = str_replace( '<span class="', '<span aria-label="' . $count . ' orders" class="', $badge_html );
+    }
+    return $badge_html;
+}, 10, 2 );
+```
+
+## Troubleshooting
+
+### Badge Not Displaying
+
+**Check:**
+1. Badge field is not empty in item configuration
+2. Item is enabled
+3. For dynamic counters: count is greater than 0
+4. JavaScript is loading correctly (check browser console)
+
+### Counter Shows Wrong Number
+
+**Possible causes:**
+1. WooCommerce function returning cached data
+2. User has multiple accounts with different order counts
+3. Orders in non-completed statuses aren't counted
+
+**Solution:** Clear WooCommerce transients and test again.
+
+### Badge Styling Broken
+
+**Check:**
+1. Theme CSS overriding badge styles
+2. Badge CSS file not loading
+3. CSS specificity conflicts
+
+**Solution:** Use `!important` or more specific selectors:
+
+```css
+.woocommerce-MyAccount-navigation .wmab-badge {
+    background-color: #e74c3c !important;
+}
+```
+
+## Best Practices
+
+<Tip>
+  **Use Sparingly:** Too many badges create visual clutter. Limit to 1-2 badges per menu.
+</Tip>
+
+<Tip>
+  **Color Psychology:** Use red for urgent/hot items, green for new features, blue for informational counters.
+</Tip>
+
+<Tip>
+  **Remove When Irrelevant:** Remove "New" badges after a few weeks. Remove "Sale" badges when promotions end.
+</Tip>
+
+<Warning>
+  **Don't Overuse Counters:** Only use counters where the number provides value (Orders, Downloads). Avoid arbitrary counts.
+</Warning>
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Icons" icon="star" href="/features/icons">
+    Combine badges with icons for maximum visibility
+  </Card>
+  <Card title="Role-Based Visibility" icon="users" href="/features/role-based-visibility">
+    Show badges only to specific user roles
+  </Card>
+  <Card title="Custom Endpoints" icon="page" href="/features/custom-endpoints">
+    Add badges to custom My Account pages
+  </Card>
+  <Card title="Menu Builder" icon="bars" href="/features/menu-builder">
+    Manage all menu items and their badges
+  </Card>
+</CardGroup>
