@@ -388,29 +388,33 @@ You can customize icon appearance with CSS:
 
 ## Custom Icon Fonts
 
-While the plugin is optimized for Dashicons, you can use custom icon fonts:
+<Info>
+As of version 1.3.0, the plugin exclusively uses WordPress Dashicons (bundled with core). Custom icon fonts like Font Awesome are not included to keep the plugin lightweight (~95% size reduction).
+</Info>
 
-### Font Awesome Example
+If you need additional icons beyond Dashicons, you can enqueue your own icon font:
+
+### Custom Icon Font Example
 
 ```php
-// Enqueue Font Awesome
+// Enqueue custom icon font on My Account page
 add_action( 'wp_enqueue_scripts', function() {
     if ( is_account_page() ) {
-        wp_enqueue_style( 'font-awesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css' );
+        wp_enqueue_style( 'my-custom-icons', get_stylesheet_directory_uri() . '/css/custom-icons.css' );
     }
-});
+}, 20 );
 ```
 
-Then use Font Awesome classes in the icon field:
+Then use your custom icon classes in the icon field:
 
 ```text
-fas fa-shopping-cart
-far fa-heart
-fas fa-user-circle
+custom-icon-star
+custom-icon-cart
+custom-icon-heart
 ```
 
 <Warning>
-  Custom icon fonts require additional CSS to align properly with menu text. Test thoroughly before deploying.
+Custom icon fonts require additional CSS to align properly with menu text and may increase page load time. Test thoroughly before deploying.
 </Warning>
 
 ## Troubleshooting
